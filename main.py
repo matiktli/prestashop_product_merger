@@ -9,7 +9,6 @@ DB = mysql.connector.connect(
   database="prestashop"
 )
 CURSOR = DB.cursor()
-su.modify_tables(CURSOR)
 
 
 """
@@ -43,6 +42,8 @@ for r in records_to_process:
 
                 mapped_refs_and_names = u.map_attribute_refs_to_names(grouped_attribute_refs, grouped_attribute_names)
                 print('--Maped: ', mapped_refs_and_names)
+
+                mother_product = u.prepare_mother_object(r, head_name, head_ref, mapped_refs_and_names, siblings=siblings)
                 
                 #TODO - Create mother and merge them
         else:

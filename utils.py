@@ -1,19 +1,5 @@
-from collections import namedtuple
 import difflib as df
-
-PRODUCT = namedtuple('PRODUCT', ['id_product', 'name', 'references', 'proc_status'])
-
-
-"""
-Transform from db row to Product
-"""
-def to_product(db_row):
-    refs_by_flor = db_row[2].split('_')
-    refs_by_dash = db_row[2].split('-')
-    refs = refs_by_flor if len(refs_by_flor) >= len(refs_by_dash) else refs_by_dash
-    if len(refs) == 1 and refs[0] == '':
-        refs.clear()
-    return PRODUCT(id_product=db_row[0], name=db_row[1], references=refs, proc_status=db_row[3])
+import model as m
 
 """
 Obtain the mother product name from grouped list of products
@@ -141,6 +127,12 @@ def map_attribute_refs_to_names(grouped_attr_refs, grouped_attr_names):
             inside_mapping[inside_grouped_attr_names[j]] = inside_grouped_attr_refs[j]
         result.append(inside_mapping)
     return result
+
+"""
+Build mother product from source product
+"""
+def prepare_mother_object(source_product, name, ref, attribute_mapping, siblings=[]):
+    return None
 
 """
 ------------------------- SUPER DUMY UTILS -------------------------
