@@ -58,28 +58,47 @@ def get_head_ref_from_grouped_refs(grouped_refs):
     return next(iter(grouped_refs[0]))
 
 """
+Obtain head name that will be used as reference inside newly created mother.
+It is hard assumtion that we have already siblings in here.
+"""
+def get_head_name_from_grouped_names(grouped_names):
+    if len(grouped_names[0]) == 0:
+        raise Exception('Could not find head name')
+    elif len(grouped_names[0]) > 1:
+        raise Exception(f'Could not find head name. Two or more head names present: {grouped_names[0]}')
+    return next(iter(grouped_names[0]))
+
+"""
 Group the references of provided siblings by their order. (sort of like the json structure)
 """
 def group_refs_by_order(products):
     grouped_refs = []
-    grouped_names = []
     for p in products:
         refs = p.references
         for i, r in enumerate(refs):
             if len(grouped_refs) <= i:
-                grouped_refs.append(set())
+                grouped_refs.append([])
             if r not in grouped_refs[i]:
-                grouped_refs[i].add(r)
-    return grouped_refs, grouped_names
+                grouped_refs[i].append(r)
+    return grouped_refs
 
 """
-Very trivial function implementation to do not produce boiler-plate code
+Group the names of provided siblings by their order. (sort of like the json structure)
 """
-def contains(l, filter):
-    for x in l:
-        if filter(x):
-            return True
-    return False
+def group_names_by_order(products):
+    grouped_names = []
+    head_name = find_most_common_name_part(products)
+    if not head_name:
+        raise Exception("Could not find head_name")
+    grouped_names.append([head_name])
+    for p in products:
+        name_suffix = p.name.replace(head_name + ' ', '')
+        for i, name_part in enumerate(name_suffix.split(' ')):
+            if len(grouped_names) <= i+1:
+                grouped_names.append([])
+            if name_part not in grouped_names[i+1]:
+                grouped_names[i+1].append(name_part)
+    return grouped_names
 
 """
 Convert reference table to reference string
@@ -104,6 +123,29 @@ def find_most_common_name_part(products, n=2):
         result = ' '.join(splited[:-1])
     return result
 
+
+"""
+Create mapping for refs into names if possible
+"""
+def map_attribute_refs_to_names(grouped_attr_refs, grouped_attr_names):
+    result = []
+    if len(grouped_attr_refs) != len(grouped_attr_names):
+        raise Exception("Could not match refs to names. Wrong initial sizes")
+    for i in range(0, len(grouped_attr_refs)):
+        inside_grouped_attr_refs = grouped_attr_refs[i]
+        inside_grouped_attr_names = grouped_attr_names[i]
+        if len(inside_grouped_attr_refs) != len(inside_grouped_attr_names):
+            raise Exception("Could not match refs to names. Wrong inside sizes")
+        inside_mapping = {}
+        for j in range(0, len(inside_grouped_attr_refs)):
+            inside_mapping[inside_grouped_attr_names[j]] = inside_grouped_attr_refs[j]
+        result.append(inside_mapping)
+    return result
+
+"""
+------------------------- SUPER DUMY UTILS -------------------------
+"""
+
 """
 Utlility function for finding longest repeating substring in two strings
 """
@@ -120,3 +162,12 @@ def longest_substring(s1, s2):
                     answer = match
                 match = ""
     return answer
+
+"""
+Very trivial function implementation to do not produce boiler-plate code
+"""
+def contains(l, filter):
+    for x in l:
+        if filter(x):
+            return True
+    return False

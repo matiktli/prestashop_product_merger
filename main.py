@@ -24,22 +24,31 @@ su.modify_tables(CURSOR)
 
 records_to_process = su.get_products_to_process(CURSOR)
 for r in records_to_process:
-    if (r.id_product not in [2, 21]): continue
-    print(r)
-    mother = su.find_mother_for_product(CURSOR, r)
-    if mother is None:
-        siblings = su.find_siblings_for_product(CURSOR, r)
-        print(f'    Siblings found: {siblings}')
-        if len(siblings) == 0:
-            #su.set_product_proc_status(CURSOR, r.id_product, su.ProcStatus.UNIQUE)
-            pass
+    try:
+        if (r.id_product not in [2, 21]): continue
+        print(r)
+        mother = su.find_mother_for_product(CURSOR, r)
+        if mother is None:
+            siblings = su.find_siblings_for_product(CURSOR, r)
+            print(f'    Siblings found: {siblings}')
+            if len(siblings) == 0:
+                #su.set_product_proc_status(CURSOR, r.id_product, su.ProcStatus.UNIQUE)
+                pass
+            else:
+                grouped_attribute_refs = u.group_refs_by_order(siblings)
+                grouped_attribute_names = u.group_names_by_order(siblings)
+
+                head_ref = u.get_head_ref_from_grouped_refs(grouped_attribute_refs)
+                head_name = u.get_head_name_from_grouped_names(grouped_attribute_names)
+
+                mapped_refs_and_names = u.map_attribute_refs_to_names(grouped_attribute_refs, grouped_attribute_names)
+                print('--Maped: ', mapped_refs_and_names)
+                
+                #TODO - Create mother and merge them
         else:
-            grouped_attribute_refs, _ = u.group_refs_by_order(siblings)
-            head_ref = u.get_head_ref_from_grouped_refs(grouped_attribute_refs)
-            head_name = u.find_most_common_name_part(siblings)
-            #TODO - Create mother and merge them
-    else:
-        print(f'    Mother found: {mother}')
-        #su.merge_product_to_mother(CURSOR, r, mother)
-        #su.mark_product_as_inactive(CURSOR, r.id_product)
-        #su.set_product_proc_status(CURSOR, r.id_product, su.ProcStatus.PROCESSED)
+            print(f'    Mother found: {mother}')
+            #su.merge_product_to_mother(CURSOR, r, mother)
+            #su.mark_product_as_inactive(CURSOR, r.id_product)
+            #su.set_product_proc_status(CURSOR, r.id_product, su.ProcStatus.PROCESSED)
+    except Exception as ex:
+        print(f'\n[Error while processing record with id: {r.id_product}]. {ex}\n')
