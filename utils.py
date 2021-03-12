@@ -54,7 +54,7 @@ def get_head_ref_from_grouped_refs(grouped_refs):
     if len(grouped_refs[0]) == 0:
         raise Exception('Could not find head ref')
     elif len(grouped_refs[0]) > 1:
-        raise Exception('Could not find head ref. Two or more head refs present')
+        raise Exception(f'Could not find head ref. Two or more head refs present: {grouped_refs[0]}')
     return next(iter(grouped_refs[0]))
 
 """
@@ -62,6 +62,7 @@ Group the references of provided siblings by their order. (sort of like the json
 """
 def group_refs_by_order(products):
     grouped_refs = []
+    grouped_names = []
     for p in products:
         refs = p.references
         for i, r in enumerate(refs):
@@ -69,7 +70,7 @@ def group_refs_by_order(products):
                 grouped_refs.append(set())
             if r not in grouped_refs[i]:
                 grouped_refs[i].add(r)
-    return grouped_refs
+    return grouped_refs, grouped_names
 
 """
 Very trivial function implementation to do not produce boiler-plate code
@@ -85,3 +86,37 @@ Convert reference table to reference string
 """
 def to_ref_string(refs: []):
     return '_'.join(refs)
+
+"""
+Find most repeating name in siblings products
+"""
+def find_most_common_name_part(products, n=2):
+    result = None
+    for p in products:
+        if result == None:
+            result = p.name
+        else:
+            result = longest_substring(result, p.name)
+    # lets remove any 'non-word' from the end of string just in case
+    splited = result.split(' ')
+    last_suffix = splited[len(splited) - 1]
+    if len(last_suffix) <= n:
+        result = ' '.join(splited[:-1])
+    return result
+
+"""
+Utlility function for finding longest repeating substring in two strings
+"""
+def longest_substring(s1, s2):
+    answer = ""
+    len1, len2 = len(s1), len(s2)
+    for i in range(len1):
+        match = ""
+        for j in range(len2):
+            if (i + j < len1 and s1[i + j] == s2[j]):
+                match += s2[j]
+            else:
+                if (len(match) > len(answer)):
+                    answer = match
+                match = ""
+    return answer

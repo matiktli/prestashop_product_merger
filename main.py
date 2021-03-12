@@ -24,7 +24,7 @@ su.modify_tables(CURSOR)
 
 records_to_process = su.get_products_to_process(CURSOR)
 for r in records_to_process:
-    if (r.id_product not in [2, 14]): continue
+    if (r.id_product not in [2, 21]): continue
     print(r)
     mother = su.find_mother_for_product(CURSOR, r)
     if mother is None:
@@ -34,10 +34,10 @@ for r in records_to_process:
             #su.set_product_proc_status(CURSOR, r.id_product, su.ProcStatus.UNIQUE)
             pass
         else:
-            #TODO - Create mother and merge them
-            grouped_attribute_refs = u.group_refs_by_order(siblings)
+            grouped_attribute_refs, _ = u.group_refs_by_order(siblings)
             head_ref = u.get_head_ref_from_grouped_refs(grouped_attribute_refs)
-            pass
+            head_name = u.find_most_common_name_part(siblings)
+            #TODO - Create mother and merge them
     else:
         print(f'    Mother found: {mother}')
         #su.merge_product_to_mother(CURSOR, r, mother)
