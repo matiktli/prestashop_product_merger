@@ -39,7 +39,10 @@ PRODUCT = namedtuple('PRODUCT',
 class Product(PRODUCT):
         __slots__ = ()
         def __str__(self):
-            return str(self.id_product)
+            return str(f'Product(id: {self.id_product}, name: {self.name}, references: {self.references}, proc_status: {self.proc_status})')
+        
+        def __repr__(self):
+            return self.__str__()
 
 """
 ------------------------- ENUMS -------------------------
