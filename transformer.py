@@ -1,5 +1,6 @@
 import model as m
-
+import random
+import string
 
 """
 From: `product` & `product_lang`
@@ -14,5 +15,22 @@ def to_product(db_row):
         refs.clear()
     return m.Product(*db_row, references=refs)
 
+"""
+From: `model.PRODUCT`
+To: `product` & `product_lang`
+"""
+def to_record(product: m.Product):
+    return ''
+
 def __find_index(list_of_fields, name):
     return list_of_fields.index(name)
+
+def product_to_mother(name, ref, source):
+    ref = ref + '-(' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=5)) + ')'
+    result = m.Mother(*list(source))
+    result.id_product = None
+    result.reference = ref
+    result.name = name
+    result.references = [ref]
+    result.proc_status = m.ProcStatus.MOTHER.value
+    return result

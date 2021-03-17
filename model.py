@@ -1,4 +1,4 @@
-from collections import namedtuple
+from recordtype import recordtype
 from enum import Enum
 
 """
@@ -32,9 +32,9 @@ PRODUCT_COMBINED_FIELDS = PRODUCT_FIELDS + PRODUCT_LANG_FIELDS + PRODUCT_CUSTOM_
 """
 Product represents join of `product` & `product_lang`
 """
-PRODUCT = namedtuple('PRODUCT',
+PRODUCT = recordtype('PRODUCT',
     field_names = PRODUCT_COMBINED_FIELDS,
-    defaults=(None,)*len(PRODUCT_COMBINED_FIELDS))
+    default=(None,)*len(PRODUCT_COMBINED_FIELDS))
 
 class Product(PRODUCT):
         __slots__ = ()
@@ -44,6 +44,21 @@ class Product(PRODUCT):
         def __repr__(self):
             return self.__str__()
 
+
+"""
+Mother represents join of `product` & `product_lang`
+"""
+MOTHER = recordtype('MOTHER',
+    field_names = PRODUCT_COMBINED_FIELDS,
+    default=(None,)*len(PRODUCT_COMBINED_FIELDS))
+
+class Mother(MOTHER):
+        __slots__ = ()
+        def __str__(self):
+            return str(f'Mother(id: {self.id_product}, name: {self.name}, references: {self.references}, proc_status: {self.proc_status})')
+        
+        def __repr__(self):
+            return self.__str__()
 """
 ------------------------- ENUMS -------------------------
 """

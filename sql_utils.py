@@ -56,3 +56,5 @@ def merge_product_to_mother(c, product, mother):
     main_product_ref = product.references[0]
     product_options = product.references[1:]
     
+def save_mother(c, mother):
+    return 'mother id'

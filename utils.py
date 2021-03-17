@@ -1,5 +1,7 @@
 import difflib as df
 import model as m
+import copy
+import transformer as t
 
 """
 Obtain the mother product name from grouped list of products
@@ -132,7 +134,8 @@ def map_attribute_refs_to_names(grouped_attr_refs, grouped_attr_names):
 Build mother product from source product
 """
 def prepare_mother_object(source_product, name, ref, attribute_mapping, siblings=[]):
-    return None
+    mother = t.product_to_mother(name, ref, source=source_product)
+    return mother
 
 """
 ------------------------- SUPER DUMY UTILS -------------------------
