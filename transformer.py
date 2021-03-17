@@ -41,7 +41,10 @@ def to_db_values(source, fields_to_take, defaults={}):
     result_values = []
     source_fields = source._fields
     for i, field_name in enumerate(fields_to_take):
-        if field_name in source_fields:
+        if field_name in defaults:
+            val = defaults[field_name]
+            result_values.append(val)
+        elif field_name in source_fields:
             val = getattr(source, field_name)
             if isinstance(val, datetime.datetime):
                 if field_name in ('available_date'):
@@ -50,10 +53,7 @@ def to_db_values(source, fields_to_take, defaults={}):
                     val = val.strftime('%Y-%m-%d %H:%M:%S')
             result_values.append(val)
         else:
-            if field_name in defaults:
-                val = defaults[field_name]
-                result_values.append(val)
-            else:
-                print('---Could not find: ', field_name)
+            print('---Could not find: ', field_name)
+            
     result = ['NULL' if i in [None, 'None'] else ('\'' + str(i) + '\'') for i in result_values]
     return ', '.join(result)

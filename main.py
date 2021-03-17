@@ -1,6 +1,7 @@
 import sql_utils as su
 import utils as u
 import mysql.connector
+import model as m
 
 DB = mysql.connector.connect(
   host="localhost",
@@ -8,9 +9,9 @@ DB = mysql.connector.connect(
   password="batmankill2404",
   database="prestashop"
 )
-DB.autocommit = False
+DB.autocommit = True
 CURSOR = DB.cursor()
-
+su.db_init(CURSOR, db=DB)
 
 """
 1. Get unprocessed products
@@ -35,8 +36,8 @@ for r in records_to_process:
                 #su.set_product_proc_status(CURSOR, r.id_product, su.ProcStatus.UNIQUE)
                 pass
             else:
-                grouped_attribute_refs = u.group_refs_by_order(siblings)
-                grouped_attribute_names = u.group_names_by_order(siblings)
+                grouped_attribute_refs = u.group_refs_by_order(siblings+ [r])
+                grouped_attribute_names = u.group_names_by_order(siblings + [r])
 
                 head_ref = u.get_head_ref_from_grouped_refs(grouped_attribute_refs)
                 head_name = u.get_head_name_from_grouped_names(grouped_attribute_names)
@@ -48,17 +49,22 @@ for r in records_to_process:
                 mother_product.id_product = mother_id
                 print(f'--Mother created: {mother_product}')
 
-                su.save_combinations(CURSOR, mother_product, source=r, siblings=siblings)
+                su.save_combinations(CURSOR, mother_product, source=r, siblings=siblings, mappings=mapped_refs_and_names)
+
+                for pp in siblings + [r]:
+                    print(pp)
+                    su.mark_product_as_inactive(CURSOR, pp.id_product)
+                    su.set_product_proc_status(CURSOR, pp.id_product, m.ProcStatus.PROCESSED)
 
                 #TODO - Create mother and merge them
         else:
             print(f'--Mother found: {mother}')
-            #su.merge_product_to_mother(CURSOR, r, mother)
-            #su.mark_product_as_inactive(CURSOR, r.id_product)
-            #su.set_product_proc_status(CURSOR, r.id_product, su.ProcStatus.PROCESSED)
+            su.merge_product_to_mother(CURSOR, r, mother)
+            su.mark_product_as_inactive(CURSOR, r.id_product)
+            su.set_product_proc_status(CURSOR, r.id_product, m.ProcStatus.PROCESSED)
     except Exception as ex:
         raise ex #tmp
         print(f'\n[Error while processing record with id: {r.id_product}]. {ex}\n')
 
 input('Do flip')
-DB.rollback()
+#DB.rollback()

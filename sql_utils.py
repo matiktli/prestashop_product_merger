@@ -3,6 +3,15 @@ import transformer as t
 import model as m
 import queries as queries
 
+def db_init(c, db=None):
+    try:
+        q = 'ALTER TABLE `prstshp_product` ADD COLUMN `proc_status` INT(1) DEFAULT -1'
+        c.execute(q)
+        if db != None:
+            db.commit()
+    except Exception:
+        return
+
 def get_products(c, proc_statuses: [m.ProcStatus] = None, additional_query = ''):
     q = queries.GET_PRODUCTS_QUERY.format(queries.PRODUCT_FIELDS_SQL + ', ' + queries.PRODUCT_LANG_FIELDS_SQL)
     if proc_statuses != None:
@@ -26,11 +35,11 @@ def get_products_to_process(c, additional_query = ''):
     return get_products(c, [m.ProcStatus.UNIQUE, m.ProcStatus.NOT_PROCESSED], additional_query = additional_query)
 
 def mark_product_as_inactive(c, product_id):
-    q = 'UPDATE `prstshp_product` SET active=0 WHERE id_product=' + str(product_id)
+    q = 'UPDATE `prstshp_product` SET `active`=0 WHERE `id_product`=' + str(product_id)
     c.execute(q)
 
 def set_product_proc_status(c, product_id, status: m.ProcStatus):
-    q = f'UPDATE `prstshp_product` SET proc_status={status.value} WHERE id_product={str(product_id)}'
+    q = f'UPDATE `prstshp_product` SET `proc_status`={status.value} WHERE `id_product`={str(product_id)}'
     c.execute(q)
 
 def find_mother_for_product(c, product):
@@ -51,6 +60,15 @@ def find_siblings_for_product(c, product):
     found_siblings = u.get_siblings_products_for_product(product, potential_siblings)
     return found_siblings
 
+def find_attribute_id_by_name(c, name):
+    names = [name.lower(), name.upper(), name.capitalize()]
+    names = ','.join(['\'' + n + '\'' for n in names])
+    q = f'SELECT id_attribute FROM `prstshp_attribute_lang` WHERE name IN ({names})'
+    c.execute(q)
+    r = c.fetchall()
+    r = r[0][0] if len(r) == 1 else None
+    return r
+
 def merge_product_to_mother(c, product, mother):
     #TODO - move data from product to combinations
     main_product_ref = product.references[0]
@@ -63,11 +81,21 @@ def save_mother(c, mother: m.Mother, db=None):
     insert_product_shop(c, mother, db=db)
     return mother_id
 
-def save_combinations(c, mother_product, source, siblings, db=None):
+def save_combinations(c, mother_product, source, siblings, db=None, mappings={}):
     for i, p in enumerate(([source] + siblings)):
-        p.id_product = mother_product.id_product
-        product_attribute_id = insert_product_attribute(c, p, db=db, default_on_value=(1 if i == 0 else None))
-        insert_product_attribute_shop(c, p, db=db, product_attribute_id=product_attribute_id, default_on_value=(1 if i == 0 else None))
+        product_attribute_id = insert_product_attribute(c, p, db=db, default_on_value=(1 if i == 0 else None), mom_id = mother_product.id_product)
+        insert_product_attribute_shop(c, p, db=db, product_attribute_id=product_attribute_id, default_on_value=(1 if i == 0 else None), mom_id = mother_product.id_product)
+        for i, ref in enumerate(p.references[1:]):
+            found_mapping = None
+            for k, v in mappings[i+1].items():
+                if v == ref:
+                   found_mapping = k
+            if found_mapping == None:
+                raise Exception(f'Could not find attribute mapping for ref: {ref}')
+            attribute_id = find_attribute_id_by_name(c, found_mapping)
+            if attribute_id == None:
+                raise Exception(f'Could not find attribute id for mapping: {found_mapping}')
+            insert_product_attribute_combination(c, db=db, attribute_id=attribute_id, product_attribute_id=product_attribute_id)
 
 def insert_product(c, product, db=None):
     product_fields_without_id = m.PRODUCT_FIELDS.copy()
@@ -104,23 +132,30 @@ def insert_product_shop(c, product_shop, db=None):
         db.commit()
     return c.lastrowid
 
-def insert_product_attribute(c, product_attribute, db=None, default_on_value=None):
+def insert_product_attribute(c, product_attribute, db=None, default_on_value=None, mom_id=None):
     product_shop_fields_with_id = m.PRODUCT_ATTRIBUTE_FIELDS.copy()
     product_shop_sql_fields_without_id = str(queries.PRODUCT_ATTRIBUTE_FIELDS_SQL_INSERT).replace('p_atr.', '')
     
-    values = t.to_db_values(product_attribute, product_shop_fields_with_id, defaults={'unit_price_impact': 0, 'default_on': default_on_value})
+    values = t.to_db_values(product_attribute, product_shop_fields_with_id, defaults={'unit_price_impact': 0, 'default_on': default_on_value, 'id_product': mom_id})
     q = queries.INSERT_PRODUCT_ATTRIBUTE_QUERY.format(product_shop_sql_fields_without_id, values)
     c.execute(q)
     if db != None:
         db.commit()
     return c.lastrowid
 
-def insert_product_attribute_shop(c, product_attribute_shop, db=None, default_on_value=None, product_attribute_id=None):
+def insert_product_attribute_shop(c, product_attribute_shop, db=None, default_on_value=None, product_attribute_id=None, mom_id=None):
     product_shop_fields_with_id = m.PRODUCT_ATTRIBUTE_SHOP_FIELDS.copy()
     product_shop_sql_fields_without_id = str(queries.PRODUCT_ATTRIBUTE_SHOP_FIELDS_SQL_INSERT).replace('p_atr_shop.', '')
     
-    values = t.to_db_values(product_attribute_shop, product_shop_fields_with_id, defaults={'unit_price_impact': 0, 'default_on': default_on_value, 'id_product_attribute': product_attribute_id})
+    values = t.to_db_values(product_attribute_shop, product_shop_fields_with_id, defaults={'unit_price_impact': 0, 'default_on': default_on_value, 'id_product_attribute': product_attribute_id, 'id_product': mom_id})
     q = queries.INSERT_PRODUCT_ATTRIBUTE_SHOP_QUERY.format(product_shop_sql_fields_without_id, values)
+    c.execute(q)
+    if db != None:
+        db.commit()
+    return c.lastrowid
+
+def insert_product_attribute_combination(c, attribute_id, product_attribute_id, db=None):
+    q = f'INSERT INTO `prstshp_product_attribute_combination` (`id_attribute`, `id_product_attribute`) VALUES (\'{attribute_id}\', \'{product_attribute_id}\')'
     c.execute(q)
     if db != None:
         db.commit()
