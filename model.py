@@ -13,7 +13,9 @@ PRODUCT_FIELDS = ['id_product', 'proc_status', 'id_supplier', 'id_manufacturer',
     'cache_default_attribute', 'date_add', 'date_upd', 'advanced_stock_management', 'pack_stock_type', 'state']
 
 PRODUCT_LANG_FIELDS = ['name', 'description', 'id_shop', 'description_short', 'link_rewrite', 'meta_description', 'meta_keywords', 'meta_title', 'available_now', 'available_later',
-    'delivery_in_stock', 'delivery_out_stock']
+    'delivery_in_stock', 'delivery_out_stock', 'id_lang']
+
+PRODUCT_SHOP_FIELDS = ['id_product', 'id_shop', 'id_category_default', 'id_tax_rules_group', 'on_sale', 'online_only', 'ecotax', 'minimal_quantity', 'low_stock_threshold', 'low_stock_alert', 'price', 'wholesale_price', 'unity', 'unit_price_ratio', 'additional_shipping_cost', 'customizable', 'uploadable_files', 'text_fields', 'active', 'redirect_type', 'id_type_redirected', 'available_for_order', 'available_date', 'show_condition', 'condition', 'show_price', 'indexed', 'visibility', 'cache_default_attribute', 'advanced_stock_management', 'date_add', 'date_upd', 'pack_stock_type']
 
 PRODUCT_CUSTOM_DEFINED_FIELDS = ['references']
 

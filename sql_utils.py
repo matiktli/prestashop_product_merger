@@ -4,7 +4,7 @@ import model as m
 import queries as queries
 
 def get_products(c, proc_statuses: [m.ProcStatus] = None, additional_query = ''):
-    q = queries.GET_PRODUCTS_QUERY.format(queries.PRODUCT_FIELDS_SQL)
+    q = queries.GET_PRODUCTS_QUERY.format(queries.PRODUCT_FIELDS_SQL + ', ' + queries.PRODUCT_LANG_FIELDS_SQL)
     if proc_statuses != None:
         statuses_string = ', '.join(['\"' + str(s.value) + '\"' for s in proc_statuses])
         q += f' AND p.proc_status in ({statuses_string})'
@@ -56,5 +56,45 @@ def merge_product_to_mother(c, product, mother):
     main_product_ref = product.references[0]
     product_options = product.references[1:]
     
-def save_mother(c, mother):
-    return 'mother id'
+def save_mother(c, mother: m.Mother, db=None):
+    mother_id = insert_product(c, mother, db=db)
+    #TODO
+    mother.id_product = mother_id
+    insert_product_lang(c, mother, db=db)
+    insert_product_shop(c, mother, db=db)
+    return mother_id
+
+def insert_product(c, product, db=None):
+    product_fields_without_id = m.PRODUCT_FIELDS.copy()
+    product_fields_without_id.remove('id_product')
+    product_sql_fields_without_id = str(queries.PRODUCT_FIELDS_SQL_INSERT).replace('`p.id_product`,', '').replace('p.', '')
+
+    values = t.to_db_values(product, product_fields_without_id)
+    q = queries.INSERT_PRODUCT_QUERY.format(product_sql_fields_without_id, values)
+    c.execute(q)
+    if db != None:
+        db.commit()
+    return c.lastrowid
+
+def insert_product_lang(c, product_lang, db=None):
+    product_lang_fields_with_id = m.PRODUCT_LANG_FIELDS.copy()
+    product_lang_fields_with_id.append('id_product')
+    product_lang_sql_fields_without_id = str(queries.PRODUCT_LANG_FIELDS_SQL_INSERT).replace('p_lang.', '')
+    
+    values = t.to_db_values(product_lang, product_lang_fields_with_id)
+    q = queries.INSERT_PRODUCT_LANG_QUERY.format(product_lang_sql_fields_without_id, values)
+    c.execute(q)
+    if db != None:
+        db.commit()
+    return c.lastrowid
+
+def insert_product_shop(c, product_shop, db=None):
+    product_shop_fields_with_id = m.PRODUCT_SHOP_FIELDS.copy()
+    product_shop_sql_fields_without_id = str(queries.PRODUCT_SHOP_FIELDS_SQL_INSERT).replace('p_shop.', '')
+    
+    values = t.to_db_values(product_shop, product_shop_fields_with_id)
+    q = queries.INSERT_PRODUCT_SHOP_QUERY.format(product_shop_sql_fields_without_id, values)
+    c.execute(q)
+    if db != None:
+        db.commit()
+    return c.lastrowid

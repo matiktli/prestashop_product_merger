@@ -25,11 +25,11 @@ records_to_process = su.get_products_to_process(CURSOR)
 for r in records_to_process:
     try:
         if (r.id_product not in [21]): continue
-        print(r)
+        print(f'Processing: {r}')
         mother = su.find_mother_for_product(CURSOR, r)
         if mother is None:
             siblings = su.find_siblings_for_product(CURSOR, r)
-            print(f'    Siblings found: {len(siblings)}')
+            print(f'--Siblings found: {len(siblings)}')
             if len(siblings) == 0:
                 #su.set_product_proc_status(CURSOR, r.id_product, su.ProcStatus.UNIQUE)
                 pass
@@ -43,12 +43,13 @@ for r in records_to_process:
                 mapped_refs_and_names = u.map_attribute_refs_to_names(grouped_attribute_refs, grouped_attribute_names)
 
                 mother_product = u.prepare_mother_object(r, head_name, head_ref, mapped_refs_and_names, siblings=siblings)
-                print(f'    Created mother: {mother_product}')
-                #su.save_mother(CURSOR, mother_product)
+                mother_id = su.save_mother(CURSOR, mother_product, db=DB)
+                mother_product.id_product = mother_id
+                print(f'--Mother created: {mother_product}')
 
                 #TODO - Create mother and merge them
         else:
-            print(f'    Mother found: {mother}')
+            print(f'--Mother found: {mother}')
             #su.merge_product_to_mother(CURSOR, r, mother)
             #su.mark_product_as_inactive(CURSOR, r.id_product)
             #su.set_product_proc_status(CURSOR, r.id_product, su.ProcStatus.PROCESSED)
