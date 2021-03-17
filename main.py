@@ -59,6 +59,7 @@ for r in records_to_process:
                 #TODO - Create mother and merge them
         else:
             print(f'--Mother found: {mother}')
+            raise Exception("IN IMPLEMENTATION")
             su.merge_product_to_mother(CURSOR, r, mother)
             su.mark_product_as_inactive(CURSOR, r.id_product)
             su.set_product_proc_status(CURSOR, r.id_product, m.ProcStatus.PROCESSED)
@@ -67,4 +68,4 @@ for r in records_to_process:
         print(f'\n[Error while processing record with id: {r.id_product}]. {ex}\n')
 
 input('Do flip')
-#DB.rollback()
+DB.rollback()

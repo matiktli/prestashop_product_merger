@@ -35,7 +35,7 @@ def get_products_to_process(c, additional_query = ''):
     return get_products(c, [m.ProcStatus.UNIQUE, m.ProcStatus.NOT_PROCESSED], additional_query = additional_query)
 
 def mark_product_as_inactive(c, product_id):
-    q = 'UPDATE `prstshp_product` SET `active`=0 WHERE `id_product`=' + str(product_id)
+    q = 'UPDATE `prstshp_product` SET `active`=0, `state`=0 WHERE `id_product`=' + str(product_id)
     c.execute(q)
 
 def set_product_proc_status(c, product_id, status: m.ProcStatus):
@@ -75,16 +75,19 @@ def merge_product_to_mother(c, product, mother):
     product_options = product.references[1:]
     
 def save_mother(c, mother: m.Mother, db=None):
+    mother.redirect_type = '301-category'
     mother_id = insert_product(c, mother, db=db)
     mother.id_product = mother_id
     insert_product_lang(c, mother, db=db)
     insert_product_shop(c, mother, db=db)
+    insert_category_product(c, mother, db=db)
     return mother_id
 
 def save_combinations(c, mother_product, source, siblings, db=None, mappings={}):
     for i, p in enumerate(([source] + siblings)):
         product_attribute_id = insert_product_attribute(c, p, db=db, default_on_value=(1 if i == 0 else None), mom_id = mother_product.id_product)
         insert_product_attribute_shop(c, p, db=db, product_attribute_id=product_attribute_id, default_on_value=(1 if i == 0 else None), mom_id = mother_product.id_product)
+        insert_stock_available(c, db=db, mother_id=mother_product.id_product, product_attribute_id=product_attribute_id, product_id=p.id_product)
         for i, ref in enumerate(p.references[1:]):
             found_mapping = None
             for k, v in mappings[i+1].items():
@@ -160,3 +163,21 @@ def insert_product_attribute_combination(c, attribute_id, product_attribute_id, 
     if db != None:
         db.commit()
     return c.lastrowid
+
+def insert_stock_available(c, db=None, product_id=None, product_attribute_id=None, mother_id=None):
+    q = f'SELECT quantity FROM `prstshp_stock_available` WHERE id_product={product_id} AND id_product_attribute=0'
+    c.execute(q)
+    quantity = c.fetchall()
+    quantity = quantity[0][0] if len(quantity) == 1 else None
+    q = f'INSERT INTO `prstshp_stock_available` (`id_product`, `id_product_attribute`, `quantity`, `id_shop`, `id_shop_group`) VALUES (\'{mother_id}\', \'{product_attribute_id}\', \'{quantity}\', 1, 0)'
+    c.execute(q)
+    if db != None:
+        db.commit()
+
+def insert_category_product(c, mother, db=None):
+    q = f'SELECT COUNT(*) FROM `prstshp_category_product` WHERE id_category={mother.id_category_default}'
+    c.execute(q)
+    count = c.fetchall()
+    count = count[0][0] if len(count) == 1 else None
+    q = f'INSERT INTO `prstshp_category_product` (id_category, id_product, position) VALUES (\'{mother.id_category_default}\', \'{mother.id_product}\', \'{count + 1}\')'
+    c.execute(q)
