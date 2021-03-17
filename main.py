@@ -8,6 +8,7 @@ DB = mysql.connector.connect(
   password="batmankill2404",
   database="prestashop"
 )
+DB.autocommit = False
 CURSOR = DB.cursor()
 
 
@@ -43,9 +44,11 @@ for r in records_to_process:
                 mapped_refs_and_names = u.map_attribute_refs_to_names(grouped_attribute_refs, grouped_attribute_names)
 
                 mother_product = u.prepare_mother_object(r, head_name, head_ref, mapped_refs_and_names, siblings=siblings)
-                mother_id = su.save_mother(CURSOR, mother_product, db=DB)
+                mother_id = su.save_mother(CURSOR, mother_product)
                 mother_product.id_product = mother_id
                 print(f'--Mother created: {mother_product}')
+
+                su.save_combinations(CURSOR, mother_product, source=r, siblings=siblings)
 
                 #TODO - Create mother and merge them
         else:
@@ -56,3 +59,6 @@ for r in records_to_process:
     except Exception as ex:
         raise ex #tmp
         print(f'\n[Error while processing record with id: {r.id_product}]. {ex}\n')
+
+input('Do flip')
+DB.rollback()

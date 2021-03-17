@@ -58,11 +58,16 @@ def merge_product_to_mother(c, product, mother):
     
 def save_mother(c, mother: m.Mother, db=None):
     mother_id = insert_product(c, mother, db=db)
-    #TODO
     mother.id_product = mother_id
     insert_product_lang(c, mother, db=db)
     insert_product_shop(c, mother, db=db)
     return mother_id
+
+def save_combinations(c, mother_product, source, siblings, db=None):
+    for i, p in enumerate(([source] + siblings)):
+        p.id_product = mother_product.id_product
+        product_attribute_id = insert_product_attribute(c, p, db=db, default_on_value=(1 if i == 0 else None))
+        insert_product_attribute_shop(c, p, db=db, product_attribute_id=product_attribute_id, default_on_value=(1 if i == 0 else None))
 
 def insert_product(c, product, db=None):
     product_fields_without_id = m.PRODUCT_FIELDS.copy()
@@ -94,6 +99,28 @@ def insert_product_shop(c, product_shop, db=None):
     
     values = t.to_db_values(product_shop, product_shop_fields_with_id)
     q = queries.INSERT_PRODUCT_SHOP_QUERY.format(product_shop_sql_fields_without_id, values)
+    c.execute(q)
+    if db != None:
+        db.commit()
+    return c.lastrowid
+
+def insert_product_attribute(c, product_attribute, db=None, default_on_value=None):
+    product_shop_fields_with_id = m.PRODUCT_ATTRIBUTE_FIELDS.copy()
+    product_shop_sql_fields_without_id = str(queries.PRODUCT_ATTRIBUTE_FIELDS_SQL_INSERT).replace('p_atr.', '')
+    
+    values = t.to_db_values(product_attribute, product_shop_fields_with_id, defaults={'unit_price_impact': 0, 'default_on': default_on_value})
+    q = queries.INSERT_PRODUCT_ATTRIBUTE_QUERY.format(product_shop_sql_fields_without_id, values)
+    c.execute(q)
+    if db != None:
+        db.commit()
+    return c.lastrowid
+
+def insert_product_attribute_shop(c, product_attribute_shop, db=None, default_on_value=None, product_attribute_id=None):
+    product_shop_fields_with_id = m.PRODUCT_ATTRIBUTE_SHOP_FIELDS.copy()
+    product_shop_sql_fields_without_id = str(queries.PRODUCT_ATTRIBUTE_SHOP_FIELDS_SQL_INSERT).replace('p_atr_shop.', '')
+    
+    values = t.to_db_values(product_attribute_shop, product_shop_fields_with_id, defaults={'unit_price_impact': 0, 'default_on': default_on_value, 'id_product_attribute': product_attribute_id})
+    q = queries.INSERT_PRODUCT_ATTRIBUTE_SHOP_QUERY.format(product_shop_sql_fields_without_id, values)
     c.execute(q)
     if db != None:
         db.commit()

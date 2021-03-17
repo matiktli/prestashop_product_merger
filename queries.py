@@ -27,6 +27,9 @@ PRODUCT_LANG_FIELDS_SQL_INSERT = turn_into_string(add_this_special_char_to_colum
 
 PRODUCT_SHOP_FIELDS_SQL_INSERT = turn_into_string(add_this_special_char_to_column_names(add_prefix(m.PRODUCT_SHOP_FIELDS, 'p_shop.')))
 
+PRODUCT_ATTRIBUTE_FIELDS_SQL_INSERT = turn_into_string(add_this_special_char_to_column_names(add_prefix(m.PRODUCT_ATTRIBUTE_FIELDS, 'p_atr.')))
+
+PRODUCT_ATTRIBUTE_SHOP_FIELDS_SQL_INSERT = turn_into_string(add_this_special_char_to_column_names(add_prefix(m.PRODUCT_ATTRIBUTE_SHOP_FIELDS, 'p_atr_shop.')))
 
 """
 ------------------------- QUERIES -------------------------
@@ -36,3 +39,5 @@ GET_PRODUCTS_QUERY = 'SELECT {} FROM `prstshp_product` p LEFT OUTER JOIN `prstsh
 INSERT_PRODUCT_QUERY = 'INSERT INTO `prstshp_product` ({}) VALUES ({})'
 INSERT_PRODUCT_LANG_QUERY = 'INSERT INTO `prstshp_product_lang` ({}) VALUES ({})'
 INSERT_PRODUCT_SHOP_QUERY = 'INSERT INTO `prstshp_product_shop` ({}) VALUES ({})'
+INSERT_PRODUCT_ATTRIBUTE_QUERY = 'INSERT INTO `prstshp_product_attribute` ({}) VALUES ({})'
+INSERT_PRODUCT_ATTRIBUTE_SHOP_QUERY = 'INSERT INTO `prstshp_product_attribute_shop` ({}) VALUES ({})'
