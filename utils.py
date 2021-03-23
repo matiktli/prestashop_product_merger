@@ -77,6 +77,7 @@ def group_names_by_order(products):
     grouped_names = []
     head_name = find_most_common_name_part(products)
     if not head_name:
+        head_name = str(products[0].id_product)
         raise Exception("Could not find head_name")
     grouped_names.append([head_name])
     for p in products:

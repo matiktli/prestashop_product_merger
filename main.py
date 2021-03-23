@@ -2,6 +2,8 @@ import sql_utils as su
 import utils as u
 import mysql.connector
 import model as m
+import csv
+from datetime import datetime
 
 DB = mysql.connector.connect(
   host="localhost",
@@ -9,7 +11,7 @@ DB = mysql.connector.connect(
   password="batmankill2404",
   database="prestashop"
 )
-DB.autocommit = True
+DB.autocommit = False
 CURSOR = DB.cursor()
 su.db_init(CURSOR, db=DB)
 
@@ -22,20 +24,35 @@ su.db_init(CURSOR, db=DB)
 4. Move all unprocessed products to combinations and mark them inactive in main
 
 """
+def log(product_id, message, depth=0, depth_marker='--'):
+    msg_values = (product_id, message, depth)
+    with open('logs.csv', 'a') as f:
+        writer = csv.writer(f)
+        writer.writerow([*msg_values])
+        msg_str = f'[{msg_values[0]}]'+(''.join([depth_marker for _ in range(0, depth)]))+f'{msg_values[1]}'
+        print(msg_str)
 
-records_to_process = su.get_products_to_process(CURSOR)
+LIMIT=25
+start = datetime.now()
+records_to_process = su.get_products_to_process(CURSOR, limit=None)
+seen = set() # tmp, idk why doubles the records
 for r in records_to_process:
+    if len(seen) == LIMIT: break
     try:
-        if (r.id_product not in [21]): continue
-        print(f'Processing: {r}')
+        if r.id_product in seen: continue
+        seen.add(r.id_product)
+        #if (r.id_product not in [21]): continue
+        log(r.id_product, f'Processing: {r}', depth=0)
         mother = su.find_mother_for_product(CURSOR, r)
         if mother is None:
             siblings = su.find_siblings_for_product(CURSOR, r)
-            print(f'--Siblings found: {len(siblings)}')
+            log(r.id_product, f'Mother NOT found. Will try to find siblings', depth=1)
             if len(siblings) == 0:
-                #su.set_product_proc_status(CURSOR, r.id_product, su.ProcStatus.UNIQUE)
+                su.set_product_proc_status(CURSOR, r.id_product, m.ProcStatus.UNIQUE)
+                log(r.id_product, f'Siblings NOT found. Marking as UNIQUE.', depth=2)
                 pass
             else:
+                log(r.id_product, f'Siblings found: {len(siblings)}', depth=2)
                 grouped_attribute_refs = u.group_refs_by_order(siblings+ [r])
                 grouped_attribute_names = u.group_names_by_order(siblings + [r])
 
@@ -47,25 +64,25 @@ for r in records_to_process:
                 mother_product = u.prepare_mother_object(r, head_name, head_ref, mapped_refs_and_names, siblings=siblings)
                 mother_id = su.save_mother(CURSOR, mother_product)
                 mother_product.id_product = mother_id
-                print(f'--Mother created: {mother_product}')
+                log(r.id_product, f'Mother created with id: {mother_product.id_product}', depth=3)
 
                 su.save_combinations(CURSOR, mother_product, source=r, siblings=siblings, mappings=mapped_refs_and_names)
 
                 for pp in siblings + [r]:
-                    print(pp)
                     su.mark_product_as_inactive(CURSOR, pp.id_product)
                     su.set_product_proc_status(CURSOR, pp.id_product, m.ProcStatus.PROCESSED)
-
-                #TODO - Create mother and merge them
+                log(r.id_product, f'Combinations created, children marked as inactive len: {len(siblings + [r])}', depth=3)
         else:
-            print(f'--Mother found: {mother}')
-            raise Exception("IN IMPLEMENTATION")
+            log(r.id_product, f'--Mother found with id: {mother.id_product} :WIP: [here will merge with mother]', depth=1)
+            continue #raise Exception("IN IMPLEMENTATION --Mother found, merge now")
             su.merge_product_to_mother(CURSOR, r, mother)
             su.mark_product_as_inactive(CURSOR, r.id_product)
             su.set_product_proc_status(CURSOR, r.id_product, m.ProcStatus.PROCESSED)
     except Exception as ex:
-        raise ex #tmp
-        print(f'\n[Error while processing record with id: {r.id_product}]. {ex}\n')
+        #raise ex #tmp
+        log(r.id_product, f'\n[Error while processing record with id: {r.id_product}]. {ex}', depth=0)
 
-input('Do flip')
-DB.rollback()
+stop = datetime.now()
+print(f'Time taken for {LIMIT} records: {str(stop-start)}.')
+#input('Do flip')
+#DB.rollback()

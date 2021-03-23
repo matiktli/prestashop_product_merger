@@ -1,6 +1,6 @@
 import model as m
 
-
+TABLE_PREFIX = 'pr_'
 """
 ------------------------- HELPER FUNCTIONS -------------------------
 """
@@ -34,10 +34,10 @@ PRODUCT_ATTRIBUTE_SHOP_FIELDS_SQL_INSERT = turn_into_string(add_this_special_cha
 """
 ------------------------- QUERIES -------------------------
 """
-GET_PRODUCTS_QUERY = 'SELECT {} FROM `prstshp_product` p LEFT OUTER JOIN `prstshp_product_lang` p_lang ON p_lang.id_product = p.id_product WHERE p.id_product is not null '
+GET_PRODUCTS_QUERY = 'SELECT {} FROM `' + TABLE_PREFIX + 'product` p LEFT OUTER JOIN `' + TABLE_PREFIX + 'product_lang` p_lang ON p_lang.id_product = p.id_product WHERE p.id_product is not null '
 
-INSERT_PRODUCT_QUERY = 'INSERT INTO `prstshp_product` ({}) VALUES ({})'
-INSERT_PRODUCT_LANG_QUERY = 'INSERT INTO `prstshp_product_lang` ({}) VALUES ({})'
-INSERT_PRODUCT_SHOP_QUERY = 'INSERT INTO `prstshp_product_shop` ({}) VALUES ({})'
-INSERT_PRODUCT_ATTRIBUTE_QUERY = 'INSERT INTO `prstshp_product_attribute` ({}) VALUES ({})'
-INSERT_PRODUCT_ATTRIBUTE_SHOP_QUERY = 'INSERT INTO `prstshp_product_attribute_shop` ({}) VALUES ({})'
+INSERT_PRODUCT_QUERY = 'INSERT INTO `' + TABLE_PREFIX + 'product` ({}) VALUES ({})'
+INSERT_PRODUCT_LANG_QUERY = 'INSERT INTO `' + TABLE_PREFIX + 'product_lang` ({}) VALUES ({})'
+INSERT_PRODUCT_SHOP_QUERY = 'INSERT INTO `' + TABLE_PREFIX + 'product_shop` ({}) VALUES ({})'
+INSERT_PRODUCT_ATTRIBUTE_QUERY = 'INSERT INTO `' + TABLE_PREFIX + 'product_attribute` ({}) VALUES ({})'
+INSERT_PRODUCT_ATTRIBUTE_SHOP_QUERY = 'INSERT INTO `' + TABLE_PREFIX + 'product_attribute_shop` ({}) VALUES ({})'

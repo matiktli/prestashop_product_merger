@@ -6,7 +6,7 @@ from enum import Enum
 """
 
 PRODUCT_FIELDS = ['id_product', 'proc_status', 'id_supplier', 'id_manufacturer', 'id_category_default', 'id_shop_default', 'id_tax_rules_group', 'on_sale', 'online_only', 'ean13', 'isbn', 'upc',
-    'mpn', 'ecotax', 'quantity', 'minimal_quantity', 'low_stock_threshold', 'low_stock_alert', 'price', 'wholesale_price', 'unity', 'unit_price_ratio',
+    'ecotax', 'quantity', 'minimal_quantity', 'low_stock_threshold', 'low_stock_alert', 'price', 'wholesale_price', 'unity', 'unit_price_ratio',
     'additional_shipping_cost', 'reference', 'supplier_reference', 'location', 'width', 'height', 'depth', 'weight', 'out_of_stock', 'additional_delivery_times',
     'quantity_discount', 'customizable', 'uploadable_files', 'text_fields', 'active', 'redirect_type', 'id_type_redirected', 'available_for_order',
     'available_date', 'show_condition', 'condition', 'show_price', 'indexed', 'visibility', 'cache_is_pack', 'cache_has_attachments', 'is_virtual',
@@ -17,7 +17,7 @@ PRODUCT_LANG_FIELDS = ['name', 'description', 'id_shop', 'description_short', 'l
 
 PRODUCT_SHOP_FIELDS = ['id_product', 'id_shop', 'id_category_default', 'id_tax_rules_group', 'on_sale', 'online_only', 'ecotax', 'minimal_quantity', 'low_stock_threshold', 'low_stock_alert', 'price', 'wholesale_price', 'unity', 'unit_price_ratio', 'additional_shipping_cost', 'customizable', 'uploadable_files', 'text_fields', 'active', 'redirect_type', 'id_type_redirected', 'available_for_order', 'available_date', 'show_condition', 'condition', 'show_price', 'indexed', 'visibility', 'cache_default_attribute', 'advanced_stock_management', 'date_add', 'date_upd', 'pack_stock_type']
 
-PRODUCT_ATTRIBUTE_FIELDS = ['id_product', 'reference', 'supplier_reference', 'location', 'ean13', 'isbn', 'upc', 'mpn', 'wholesale_price', 'price', 'ecotax', 'quantity', 'weight', 'unit_price_impact', 'default_on', 'minimal_quantity', 'low_stock_threshold', 'low_stock_alert', 'available_date']
+PRODUCT_ATTRIBUTE_FIELDS = ['id_product', 'reference', 'supplier_reference', 'location', 'ean13', 'isbn', 'upc', 'wholesale_price', 'price', 'ecotax', 'quantity', 'weight', 'unit_price_impact', 'default_on', 'minimal_quantity', 'low_stock_threshold', 'low_stock_alert', 'available_date']
 
 PRODUCT_ATTRIBUTE_SHOP_FIELDS = ['id_product', 'id_product_attribute', 'id_shop', 'wholesale_price', 'price', 'ecotax', 'weight', 'unit_price_impact', 'default_on', 'minimal_quantity', 'low_stock_threshold', 'low_stock_alert', 'available_date']
 
