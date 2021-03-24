@@ -26,10 +26,11 @@ su.db_init(CURSOR, db=DB)
 
 """
 
-start = datetime.now()
+START = datetime.now()
+
 def log(product_id, message, depth=0, depth_marker='--'):
     msg_values = (product_id, message, depth)
-    with open(f'logs_{str(time.time())}.csv', 'a') as f:
+    with open(f'logs_{str(START.timestamp())}.csv', 'a') as f:
         writer = csv.writer(f)
         writer.writerow([*msg_values])
         msg_str = f'[{msg_values[0]}]'+(''.join([depth_marker for _ in range(0, depth)]))+f'{msg_values[1]}'
@@ -85,7 +86,7 @@ for r in records_to_process:
         raise ex #tmp
         log(r.id_product, f'\n[Error while processing record with id: {r.id_product}]. {ex}', depth=0)
 
-stop = datetime.now()
-print(f'Time taken for {LIMIT} records: {str(stop-start)}.')
+STOP = datetime.now()
+print(f'Time taken for {LIMIT} records: {str(STOP-START)}.')
 #input('Do flip')
 #DB.rollback()

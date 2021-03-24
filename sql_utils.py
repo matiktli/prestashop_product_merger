@@ -82,7 +82,7 @@ def find_attribute_id_by_name(c, name):
     return r
 
 def merge_product_to_mother(c, product, mother):
-    #TODO - move data from product to combinations
+    #TODO-hard-p2- move data from product to combinations
     main_product_ref = product.references[0]
     product_options = product.references[1:]
     

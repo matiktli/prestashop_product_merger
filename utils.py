@@ -53,15 +53,27 @@ def get_siblings_products_for_product(product, potential_siblings):
     return siblings
 
 """
-Obtain head ref that will be used as reference inside newly created mother.
+Obtains a common prefix of len `n` from list of strings else None
+"""
+def get_common_prefix(ref_group: [], n=3):
+    #TODO-simple-p1
+    return None
+
+"""
+Obtains head ref that will be used as reference inside newly created mother.
 It is hard assumtion that we have already siblings in here.
 """
 def get_head_ref_from_grouped_refs(grouped_refs):
     if len(grouped_refs[0]) == 0:
-        raise Exception('Could not find head ref')
+        raise Exception('Could not find `head ref`')
     elif len(grouped_refs[0]) > 1:
-        raise Exception(f'Could not find head ref. Two or more head refs present: {grouped_refs[0]}')
-    return next(iter(grouped_refs[0]))
+        prefix = get_common_prefix(grouped_refs[0])
+        if prefix is not None:
+            return str(prefix)
+        else:
+            raise Exception(f'Could not find `head ref` nor `common prefix` in multiple head refs: {grouped_refs[0]}')
+        raise Exception(f'Could not find `head ref`. Two or more `head refs` present: {grouped_refs[0]}')
+    return str(next(iter(grouped_refs[0])))
 
 """
 Obtain head name that will be used as reference inside newly created mother.
