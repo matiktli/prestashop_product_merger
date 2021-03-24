@@ -4,6 +4,7 @@ import mysql.connector
 import model as m
 import csv
 from datetime import datetime
+import time
 
 DB = mysql.connector.connect(
   host="localhost",
@@ -24,16 +25,18 @@ su.db_init(CURSOR, db=DB)
 4. Move all unprocessed products to combinations and mark them inactive in main
 
 """
+
+start = datetime.now()
 def log(product_id, message, depth=0, depth_marker='--'):
     msg_values = (product_id, message, depth)
-    with open('logs.csv', 'a') as f:
+    with open(f'logs_{str(time.time())}.csv', 'a') as f:
         writer = csv.writer(f)
         writer.writerow([*msg_values])
         msg_str = f'[{msg_values[0]}]'+(''.join([depth_marker for _ in range(0, depth)]))+f'{msg_values[1]}'
         print(msg_str)
 
-LIMIT=25
-start = datetime.now()
+LIMIT=100
+
 records_to_process = su.get_products_to_process(CURSOR, limit=None)
 seen = set() # tmp, idk why doubles the records
 for r in records_to_process:
@@ -48,7 +51,7 @@ for r in records_to_process:
             siblings = su.find_siblings_for_product(CURSOR, r)
             log(r.id_product, f'Mother NOT found. Will try to find siblings', depth=1)
             if len(siblings) == 0:
-                su.set_product_proc_status(CURSOR, r.id_product, m.ProcStatus.UNIQUE)
+                su.set_products_proc_status(CURSOR, [r.id_product], m.ProcStatus.UNIQUE)
                 log(r.id_product, f'Siblings NOT found. Marking as UNIQUE.', depth=2)
                 pass
             else:
@@ -69,17 +72,17 @@ for r in records_to_process:
                 su.save_combinations(CURSOR, mother_product, source=r, siblings=siblings, mappings=mapped_refs_and_names)
 
                 for pp in siblings + [r]:
-                    su.mark_product_as_inactive(CURSOR, pp.id_product)
-                    su.set_product_proc_status(CURSOR, pp.id_product, m.ProcStatus.PROCESSED)
+                    su.mark_products_as_inactive(CURSOR, [pp.id_product])
+                    su.set_products_proc_status(CURSOR, [pp.id_product], m.ProcStatus.PROCESSED)
                 log(r.id_product, f'Combinations created, children marked as inactive len: {len(siblings + [r])}', depth=3)
         else:
             log(r.id_product, f'--Mother found with id: {mother.id_product} :WIP: [here will merge with mother]', depth=1)
             continue #raise Exception("IN IMPLEMENTATION --Mother found, merge now")
             su.merge_product_to_mother(CURSOR, r, mother)
-            su.mark_product_as_inactive(CURSOR, r.id_product)
-            su.set_product_proc_status(CURSOR, r.id_product, m.ProcStatus.PROCESSED)
+            su.mark_products_as_inactive(CURSOR, [r.id_product])
+            su.set_products_proc_status(CURSOR, [r.id_product], m.ProcStatus.PROCESSED)
     except Exception as ex:
-        #raise ex #tmp
+        raise ex #tmp
         log(r.id_product, f'\n[Error while processing record with id: {r.id_product}]. {ex}', depth=0)
 
 stop = datetime.now()

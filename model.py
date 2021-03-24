@@ -78,4 +78,5 @@ class ProcStatus(Enum):
     PROCESSED = 0
     UNIQUE = 1
     MOTHER = 2
+    POTENTIAL_SIBLING = 3
     NOT_PROCESSED = -1

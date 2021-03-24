@@ -20,15 +20,33 @@ def __obtain_mother_name_from_product_tmp(product, n=3):
         return ' '.join(full_name_split[:n])
     return product.name
 
+def generate_name_like_search(p: m.Product):
+    l = len(p.name)
+    q = '%'+str(p.name)[2:int(l/3)]+'%'
+    return q
+
+def generate_reference_like_search(p: m.Product):
+    q = '%'
+    return q
+
+def generate_category_ids_search(p: m.Product):
+    ids = []
+    ids.append(str(p.id_category_default))
+    return ids
+
+def generate_manufacturer_ids_search(p: m.Product):
+    ids = []
+    ids.append(str(p.id_manufacturer))
+    return ids
 """
 Obtain siblings from products similar to given product via `Product.reference` distance calculation
 """
-def get_siblings_products_for_product(product, products):
-    available_refs = set([to_ref_string(p.references) for p in products if to_ref_string(p.references) != to_ref_string(product.references)])
+def get_siblings_products_for_product(product, potential_siblings):
+    available_refs = set([to_ref_string(p.references) for p in potential_siblings if to_ref_string(p.references) != to_ref_string(product.references)])
     main_ref = to_ref_string(product.references)
     found_similar_refs = set(df.get_close_matches(main_ref, available_refs, n=len(available_refs) - 1))
     siblings = []
-    for p in products:
+    for p in potential_siblings:
         ref_string = to_ref_string(p.references)
         if ref_string in found_similar_refs:
             siblings.append(p)

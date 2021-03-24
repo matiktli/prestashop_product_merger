@@ -11,7 +11,9 @@ def db_init(c, db=None):
             db.commit()
     except Exception:
         return
-
+def list_to_sql(l):
+    return '({})'.format(','.join(['\'' + x + '\'' for x in l]))
+    
 def get_products(c, proc_statuses: [m.ProcStatus] = None, additional_query = '', limit=None):
     q = queries.GET_PRODUCTS_QUERY.format(queries.PRODUCT_FIELDS_SQL + ', ' + queries.PRODUCT_LANG_FIELDS_SQL)
     if proc_statuses != None:
@@ -36,12 +38,20 @@ def get_unique_products(c, additional_query = ''):
 def get_products_to_process(c, additional_query = '', limit=None, offset=None):
     return get_products(c, [m.ProcStatus.UNIQUE, m.ProcStatus.NOT_PROCESSED], additional_query = additional_query, limit=limit)
 
-def mark_product_as_inactive(c, product_id):
-    q = 'UPDATE `' + queries.TABLE_PREFIX + 'product` SET `active`=0, `state`=0 WHERE `id_product`=' + str(product_id)
+def get_potential_siblings_for_product(c, product=m.Product, limit=None, offset=None):
+    name_like_str = u.generate_name_like_search(product)
+    reference_like_str = u.generate_reference_like_search(product)
+    category_ids_str = list_to_sql(u.generate_category_ids_search(product))
+    manufacturer_ids_str = list_to_sql(u.generate_manufacturer_ids_search(product))
+    siblings_query = 'AND (p_lang.name LIKE \'{}\' OR p.reference LIKE \'{}\') AND p.id_category_default IN {} AND p.id_manufacturer IN {}'.format(name_like_str, reference_like_str, category_ids_str, manufacturer_ids_str)
+    return get_products(c, [m.ProcStatus.UNIQUE, m.ProcStatus.NOT_PROCESSED], additional_query = siblings_query, limit=limit)
+
+def mark_products_as_inactive(c, product_ids: []):
+    q = 'UPDATE `' + queries.TABLE_PREFIX + 'product` SET `active`=0, `state`=0 WHERE `id_product` IN ' + list_to_sql(product_ids)
     c.execute(q)
 
-def set_product_proc_status(c, product_id, status: m.ProcStatus):
-    q = f'UPDATE `' + queries.TABLE_PREFIX + 'product` SET `proc_status`={status.value} WHERE `id_product`={str(product_id)}'
+def set_products_proc_status(c, product_ids: [], status: m.ProcStatus):
+    q = f'UPDATE `' + queries.TABLE_PREFIX + f'product` SET `proc_status`={status.value} WHERE `id_product` IN ' + list_to_sql(product_ids)
     c.execute(q)
 
 def find_mother_for_product(c, product):
@@ -58,14 +68,14 @@ def find_mother_for_product(c, product):
         return potential_mothers[0]
 
 def find_siblings_for_product(c, product):
-    potential_siblings = get_products_to_process(c)
+    potential_siblings = get_potential_siblings_for_product(c, product, limit=None)
     found_siblings = u.get_siblings_products_for_product(product, potential_siblings)
     return found_siblings
 
 def find_attribute_id_by_name(c, name):
     names = [name.lower(), name.upper(), name.capitalize()]
     names = ','.join(['\'' + n + '\'' for n in names])
-    q = f'SELECT id_attribute FROM `' + queries.TABLE_PREFIX + 'attribute_lang` WHERE name IN ({names})'
+    q = f'SELECT id_attribute FROM `' + queries.TABLE_PREFIX + f'attribute_lang` WHERE name IN ({names})'
     c.execute(q)
     r = c.fetchall()
     r = r[0][0] if len(r) == 1 else None
@@ -160,26 +170,26 @@ def insert_product_attribute_shop(c, product_attribute_shop, db=None, default_on
     return c.lastrowid
 
 def insert_product_attribute_combination(c, attribute_id, product_attribute_id, db=None):
-    q = f'INSERT INTO `' + queries.TABLE_PREFIX + 'product_attribute_combination` (`id_attribute`, `id_product_attribute`) VALUES (\'{attribute_id}\', \'{product_attribute_id}\')'
+    q = f'INSERT INTO `' + queries.TABLE_PREFIX + f'product_attribute_combination` (`id_attribute`, `id_product_attribute`) VALUES (\'{attribute_id}\', \'{product_attribute_id}\')'
     c.execute(q)
     if db != None:
         db.commit()
     return c.lastrowid
 
 def insert_stock_available(c, db=None, product_id=None, product_attribute_id=None, mother_id=None):
-    q = f'SELECT quantity FROM `' + queries.TABLE_PREFIX + 'stock_available` WHERE id_product={product_id} AND id_product_attribute=0'
+    q = f'SELECT quantity FROM `' + queries.TABLE_PREFIX + f'stock_available` WHERE id_product={product_id} AND id_product_attribute=0'
     c.execute(q)
     quantity = c.fetchall()
     quantity = quantity[0][0] if len(quantity) == 1 else None
-    q = f'INSERT INTO `' + queries.TABLE_PREFIX + 'stock_available` (`id_product`, `id_product_attribute`, `quantity`, `id_shop`, `id_shop_group`) VALUES (\'{mother_id}\', \'{product_attribute_id}\', \'{quantity}\', 1, 0)'
+    q = f'INSERT INTO `' + queries.TABLE_PREFIX + f'stock_available` (`id_product`, `id_product_attribute`, `quantity`, `id_shop`, `id_shop_group`) VALUES (\'{mother_id}\', \'{product_attribute_id}\', \'{quantity}\', 1, 0)'
     c.execute(q)
     if db != None:
         db.commit()
 
 def insert_category_product(c, mother, db=None):
-    q = f'SELECT COUNT(*) FROM `' + queries.TABLE_PREFIX + 'category_product` WHERE id_category={mother.id_category_default}'
+    q = f'SELECT COUNT(*) FROM `' + queries.TABLE_PREFIX + f'category_product` WHERE id_category={mother.id_category_default}'
     c.execute(q)
     count = c.fetchall()
     count = count[0][0] if len(count) == 1 else None
-    q = f'INSERT INTO `' + queries.TABLE_PREFIX + 'category_product` (id_category, id_product, position) VALUES (\'{mother.id_category_default}\', \'{mother.id_product}\', \'{count + 1}\')'
+    q = f'INSERT INTO `' + queries.TABLE_PREFIX + f'category_product` (id_category, id_product, position) VALUES (\'{mother.id_category_default}\', \'{mother.id_product}\', \'{count + 1}\')'
     c.execute(q)
