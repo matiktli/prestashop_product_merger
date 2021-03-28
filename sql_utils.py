@@ -12,7 +12,7 @@ def db_init(c, db=None):
     except Exception:
         return
 def list_to_sql(l):
-    return '({})'.format(','.join(['\'' + x + '\'' for x in l]))
+    return '({})'.format(','.join(['\'' + str(x) + '\'' for x in l]))
     
 def get_products(c, proc_statuses: [m.ProcStatus] = None, additional_query = '', limit=None):
     q = queries.GET_PRODUCTS_QUERY.format(queries.PRODUCT_FIELDS_SQL + ', ' + queries.PRODUCT_LANG_FIELDS_SQL)

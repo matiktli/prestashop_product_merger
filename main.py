@@ -45,7 +45,7 @@ for r in records_to_process:
     try:
         if r.id_product in seen: continue
         seen.add(r.id_product)
-        #if (r.id_product not in [21]): continue
+        if (r.id_product not in [21]): continue
         log(r.id_product, f'Processing: {r}', depth=0)
         mother = su.find_mother_for_product(CURSOR, r)
         if mother is None:
@@ -85,8 +85,9 @@ for r in records_to_process:
     except Exception as ex:
         raise ex #tmp
         log(r.id_product, f'\n[Error while processing record with id: {r.id_product}]. {ex}', depth=0)
+    #finally: exit()
 
 STOP = datetime.now()
 print(f'Time taken for {LIMIT} records: {str(STOP-START)}.')
-#input('Do flip')
-#DB.rollback()
+revert = input('Do you want to commit[Yes/No]: ')
+DB.commit() if revert=='Yes' else DB.rollback()

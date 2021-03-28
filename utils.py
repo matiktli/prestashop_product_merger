@@ -2,6 +2,7 @@ import difflib as df
 import model as m
 import copy
 import transformer as t
+import os
 
 """
 Obtain the mother product name from grouped list of products
@@ -44,7 +45,7 @@ Obtain siblings from products similar to given product via `Product.reference` d
 def get_siblings_products_for_product(product, potential_siblings):
     available_refs = set([to_ref_string(p.references) for p in potential_siblings if to_ref_string(p.references) != to_ref_string(product.references)])
     main_ref = to_ref_string(product.references)
-    found_similar_refs = set(df.get_close_matches(main_ref, available_refs, n=len(available_refs) - 1))
+    found_similar_refs = set(df.get_close_matches(main_ref, available_refs, n=len(available_refs)))
     siblings = []
     for p in potential_siblings:
         ref_string = to_ref_string(p.references)
@@ -55,9 +56,8 @@ def get_siblings_products_for_product(product, potential_siblings):
 """
 Obtains a common prefix of len `n` from list of strings else None
 """
-def get_common_prefix(ref_group: [], n=3):
-    #TODO-simple-p1
-    return None
+def get_common_prefix(ref_group: []):
+    return os.path.commonprefix(ref_group)
 
 """
 Obtains head ref that will be used as reference inside newly created mother.
@@ -68,10 +68,10 @@ def get_head_ref_from_grouped_refs(grouped_refs):
         raise Exception('Could not find `head ref`')
     elif len(grouped_refs[0]) > 1:
         prefix = get_common_prefix(grouped_refs[0])
-        if prefix is not None:
-            return str(prefix)
-        else:
+        if prefix is None or len(prefix) == 0:
             raise Exception(f'Could not find `head ref` nor `common prefix` in multiple head refs: {grouped_refs[0]}')
+        else:
+            return str(prefix)
         raise Exception(f'Could not find `head ref`. Two or more `head refs` present: {grouped_refs[0]}')
     return str(next(iter(grouped_refs[0])))
 
@@ -148,6 +148,8 @@ Create mapping for refs into names if possible
 """
 def map_attribute_refs_to_names(grouped_attr_refs, grouped_attr_names):
     result = []
+    print('--> ', grouped_attr_refs)
+    print('--> ', grouped_attr_names)
     if len(grouped_attr_refs) != len(grouped_attr_names):
         raise Exception("Could not match refs to names. Wrong initial sizes")
     for i in range(0, len(grouped_attr_refs)):
