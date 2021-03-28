@@ -75,10 +75,10 @@ def find_siblings_for_product(c, product):
 def find_attribute_id_by_name(c, name):
     names = [name.lower(), name.upper(), name.capitalize()]
     names = ','.join(['\'' + n + '\'' for n in names])
-    q = f'SELECT id_attribute FROM `' + queries.TABLE_PREFIX + f'attribute_lang` WHERE name IN ({names})'
+    q = f'SELECT a_lang.id_attribute, a.id_attribute_group FROM `' + queries.TABLE_PREFIX + f'attribute_lang` a_lang INNER JOIN `{queries.TABLE_PREFIX}attribute` a ON a.id_attribute = a_lang.id_attribute WHERE a_lang.name IN ({names})'
     c.execute(q)
     r = c.fetchall()
-    r = r[0][0] if len(r) == 1 else None
+    r = r[0] if len(r) == 1 else (None, None)
     return r
 
 def merge_product_to_mother(c, product, mother):
@@ -96,22 +96,26 @@ def save_mother(c, mother: m.Mother, db=None):
     return mother_id
 
 def save_combinations(c, mother_product, source, siblings, db=None, mappings={}):
+    seen_attr_to_group = set()
     for i, p in enumerate(([source] + siblings)):
         product_attribute_id = insert_product_attribute(c, p, db=db, default_on_value=(1 if i == 0 else None), mom_id = mother_product.id_product)
         insert_product_attribute_shop(c, p, db=db, product_attribute_id=product_attribute_id, default_on_value=(1 if i == 0 else None), mom_id = mother_product.id_product)
         insert_stock_available(c, db=db, mother_id=mother_product.id_product, product_attribute_id=product_attribute_id, product_id=p.id_product)
         move_images_from_product_to_other(c, source_product_id=p.id_product, target_product_id=mother_product.id_product, cover='NULL', product_attribute_id=product_attribute_id)
-        for i, ref in enumerate(p.references[1:]):
+        for j, ref in enumerate(p.references[1:]):
             found_mapping = None
-            for k, v in mappings[i+1].items():
+            for k, v in mappings[j+1].items():
                 if v == ref:
                    found_mapping = k
             if found_mapping == None:
                 raise Exception(f'Could not find attribute mapping for ref: {ref}')
-            attribute_id = find_attribute_id_by_name(c, found_mapping)
+            attribute_id, attribute_group_id = find_attribute_id_by_name(c, found_mapping)
             if attribute_id == None:
                 raise Exception(f'Could not find attribute id for mapping: {found_mapping}')
             insert_product_attribute_combination(c, db=db, attribute_id=attribute_id, product_attribute_id=product_attribute_id)
+            if '{}-{}'.format(attribute_id, attribute_group_id) not in seen_attr_to_group:
+                seen_attr_to_group.add('{}-{}'.format(attribute_id, attribute_group_id))
+                insert_layered_product_attribute(c, product=mother_product, attribute_id=attribute_id, attribute_group_id=attribute_group_id)
     set_only_one_img_as_cover(c, mother_product.id_product)
 
 def insert_product(c, product, db=None):
@@ -178,6 +182,10 @@ def insert_product_attribute_combination(c, attribute_id, product_attribute_id, 
         db.commit()
     return c.lastrowid
 
+def insert_layered_product_attribute(c, product, attribute_id, attribute_group_id):
+    q = f'INSERT INTO `' + queries.TABLE_PREFIX + f'layered_product_attribute` (`id_attribute`, `id_product`, `id_attribute_group`, `id_shop`) VALUES (\'{attribute_id}\', \'{product.id_product}\', \'{attribute_group_id}\', 1)'
+    c.execute(q)
+
 def insert_stock_available(c, db=None, product_id=None, product_attribute_id=None, mother_id=None):
     q = f'SELECT quantity FROM `' + queries.TABLE_PREFIX + f'stock_available` WHERE id_product={product_id} AND id_product_attribute=0'
     c.execute(q)
@@ -216,3 +224,10 @@ def set_only_one_img_as_cover(c, product_id):
     c.execute(uq_image)
     uq_image_shop = f'UPDATE `{queries.TABLE_PREFIX}image_shop` SET cover=1 WHERE id_product={product_id} AND id_image={id_image}'
     c.execute(uq_image_shop)
+
+def save_price_data(c, mother_product, source_product):
+    sq = f'SELECT id_currency, id_shop, price_min, price_max, id_country FROM `{queries.TABLE_PREFIX}layered_price_index` WHERE id_product={source_product.id_product} AND id_shop=1 AND id_country=14 LIMIT 1'
+    c.execute(sq)
+    results = c.fetchall()[0]
+    iq_image = 'INSERT INTO `{}layered_price_index` (id_product, id_currency, id_shop, price_min, price_max, id_country) VALUES ({}, {}, {}, {}, {}, {})'.format(queries.TABLE_PREFIX, mother_product.id_product, *results)
+    c.execute(iq_image)

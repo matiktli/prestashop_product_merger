@@ -23,10 +23,6 @@ PRODUCT_ATTRIBUTE_SHOP_FIELDS = ['id_product', 'id_product_attribute', 'id_shop'
 
 STOCK_AVAILABLE_FIELDS = ['id_stock_available', 'id_product', 'id_product_attribute', 'id_shop', 'id_shop_group', 'quantity', 'physical_quantity', 'reserved_quantity', 'depends_on_stock', 'out_of_stock', 'location']
 
-IMAGE_FIELDS = ['id_product', 'id_image', 'position', 'cover']
-IMAGE_LANG_FIELDS = ['id_image', 'id_lang', 'legend']
-IMAGE_SHOP_FIELDS = ['id_product', 'id_image', 'id_shop']
-IMAGE_PRODUCT_ATTRIBUTE_FIELDS = ['id_image', 'id_product_attribute']
 
 PRODUCT_CUSTOM_DEFINED_FIELDS = ['references']
 

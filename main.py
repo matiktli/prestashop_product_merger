@@ -71,7 +71,7 @@ for r in records_to_process:
                 log(r.id_product, f'Mother created with id: {mother_product.id_product}', depth=3)
 
                 su.save_combinations(CURSOR, mother_product, source=r, siblings=siblings, mappings=mapped_refs_and_names)
-
+                su.save_price_data(CURSOR, mother_product, r)
                 for pp in siblings + [r]:
                     su.mark_products_as_inactive(CURSOR, [pp.id_product])
                     su.set_products_proc_status(CURSOR, [pp.id_product], m.ProcStatus.PROCESSED)

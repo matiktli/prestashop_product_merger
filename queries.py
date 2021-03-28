@@ -31,12 +31,6 @@ PRODUCT_ATTRIBUTE_FIELDS_SQL_INSERT = turn_into_string(add_this_special_char_to_
 
 PRODUCT_ATTRIBUTE_SHOP_FIELDS_SQL_INSERT = turn_into_string(add_this_special_char_to_column_names(add_prefix(m.PRODUCT_ATTRIBUTE_SHOP_FIELDS, 'p_atr_shop.')))
 
-
-IMAGE_FIELDS_SQL_INSERT = turn_into_string(add_this_special_char_to_column_names(add_prefix(m.IMAGE_FIELDS, 'img.')))
-IMAGE_LANG_FIELDS_SQL_INSERT = turn_into_string(add_this_special_char_to_column_names(add_prefix(m.IMAGE_LANG_FIELDS, 'img_lang.')))
-IMAGE_SHOP_FIELDS_SQL_INSERT = turn_into_string(add_this_special_char_to_column_names(add_prefix(m.IMAGE_SHOP_FIELDS, 'img_shop.')))
-IMAGE_FIELDS_SQL_INSERT = turn_into_string(add_this_special_char_to_column_names(add_prefix(m.IMAGE_PRODUCT_ATTRIBUTE_FIELDS, 'img_p_atr.')))
-
 """
 ------------------------- QUERIES -------------------------
 """
