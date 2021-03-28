@@ -5,6 +5,7 @@ import model as m
 import csv
 from datetime import datetime
 import time
+import matcher as matcher
 
 DB = mysql.connector.connect(
   host="localhost",
@@ -38,7 +39,9 @@ def log(product_id, message, depth=0, depth_marker='--'):
 
 LIMIT=100
 
-records_to_process = su.get_products_to_process(CURSOR, limit=None, ids=[1000])
+siblings_matcher = matcher.SiblingsMatcher(CURSOR, None)
+
+records_to_process = su.get_products_to_process(CURSOR, limit=None, ids=[74])
 seen = set() # tmp, idk why doubles the records
 for r in records_to_process:
     if len(seen) == LIMIT: break
@@ -48,7 +51,7 @@ for r in records_to_process:
         log(r.id_product, f'Processing: {r}', depth=0)
         mother = su.find_mother_for_product(CURSOR, r)
         if mother is None:
-            siblings = su.find_siblings_for_product(CURSOR, r)
+            siblings = siblings_matcher.find_siblings(r)
             log(r.id_product, f'Mother NOT found. Will try to find siblings', depth=1)
             if len(siblings) == 0:
                 su.set_products_proc_status(CURSOR, [r.id_product], m.ProcStatus.UNIQUE)

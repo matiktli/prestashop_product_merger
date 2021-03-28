@@ -40,14 +40,6 @@ def get_products_to_process(c, ids=None, limit=None, offset=None):
         additional_query = f'AND p.id_product IN {list_to_sql(ids)}'
     return get_products(c, [m.ProcStatus.UNIQUE, m.ProcStatus.NOT_PROCESSED], additional_query = additional_query, limit=limit)
 
-def get_potential_siblings_for_product(c, product=m.Product, limit=None, offset=None):
-    name_like_str = u.generate_name_like_search(product)
-    reference_like_str = u.generate_reference_like_search(product)
-    category_ids_str = list_to_sql(u.generate_category_ids_search(product))
-    manufacturer_ids_str = list_to_sql(u.generate_manufacturer_ids_search(product))
-    siblings_query = 'AND (p_lang.name LIKE \'{}\' OR p.reference LIKE \'{}\') AND p.id_category_default IN {} AND p.id_manufacturer IN {}'.format(name_like_str, reference_like_str, category_ids_str, manufacturer_ids_str)
-    return get_products(c, [m.ProcStatus.UNIQUE, m.ProcStatus.NOT_PROCESSED], additional_query = siblings_query, limit=limit)
-
 def mark_products_as_inactive(c, product_ids: []):
     q = 'UPDATE `' + queries.TABLE_PREFIX + 'product` SET `active`=0, `state`=0 WHERE `id_product` IN ' + list_to_sql(product_ids)
     c.execute(q)
@@ -68,11 +60,6 @@ def find_mother_for_product(c, product):
         raise Exception(f"Two or more mothers found for product with id: {product.id_product}")
     else:
         return potential_mothers[0]
-
-def find_siblings_for_product(c, product):
-    potential_siblings = get_potential_siblings_for_product(c, product, limit=None)
-    found_siblings = u.get_siblings_products_for_product(product, potential_siblings)
-    return found_siblings
 
 def find_attribute_id_by_name(c, name):
     names = [name.lower(), name.upper(), name.capitalize()]

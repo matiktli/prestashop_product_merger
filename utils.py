@@ -1,4 +1,3 @@
-import difflib as df
 import model as m
 import copy
 import transformer as t
@@ -39,19 +38,6 @@ def generate_manufacturer_ids_search(p: m.Product):
     ids = []
     ids.append(str(p.id_manufacturer))
     return ids
-"""
-Obtain siblings from products similar to given product via `Product.reference` distance calculation
-"""
-def get_siblings_products_for_product(product, potential_siblings):
-    available_refs = set([to_ref_string(p.references) for p in potential_siblings if to_ref_string(p.references) != to_ref_string(product.references)])
-    main_ref = to_ref_string(product.references)
-    found_similar_refs = set(df.get_close_matches(main_ref, available_refs, n=len(available_refs)))
-    siblings = []
-    for p in potential_siblings:
-        ref_string = to_ref_string(p.references)
-        if ref_string in found_similar_refs:
-            siblings.append(p)
-    return siblings
 
 """
 Obtains a common prefix of len `n` from list of strings else None
