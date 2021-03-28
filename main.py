@@ -38,14 +38,13 @@ def log(product_id, message, depth=0, depth_marker='--'):
 
 LIMIT=100
 
-records_to_process = su.get_products_to_process(CURSOR, limit=None)
+records_to_process = su.get_products_to_process(CURSOR, limit=None, ids=[1000])
 seen = set() # tmp, idk why doubles the records
 for r in records_to_process:
     if len(seen) == LIMIT: break
     try:
         if r.id_product in seen: continue
         seen.add(r.id_product)
-        if (r.id_product not in [21]): continue
         log(r.id_product, f'Processing: {r}', depth=0)
         mother = su.find_mother_for_product(CURSOR, r)
         if mother is None:
@@ -56,7 +55,7 @@ for r in records_to_process:
                 log(r.id_product, f'Siblings NOT found. Marking as UNIQUE.', depth=2)
                 pass
             else:
-                log(r.id_product, f'Siblings found: {len(siblings)}', depth=2)
+                log(r.id_product, f'Siblings found: {len(siblings)}. {[p.id_product for p in siblings]}', depth=2)
                 grouped_attribute_refs = u.group_refs_by_order(siblings+ [r])
                 grouped_attribute_names = u.group_names_by_order(siblings + [r])
 
@@ -83,11 +82,11 @@ for r in records_to_process:
             su.mark_products_as_inactive(CURSOR, [r.id_product])
             su.set_products_proc_status(CURSOR, [r.id_product], m.ProcStatus.PROCESSED)
     except Exception as ex:
+        DB.rollback()
         raise ex #tmp
         log(r.id_product, f'\n[Error while processing record with id: {r.id_product}]. {ex}', depth=0)
-    #finally: exit()
 
 STOP = datetime.now()
 print(f'Time taken for {LIMIT} records: {str(STOP-START)}.')
 revert = input('Do you want to commit[Yes/No]: ')
-DB.commit() if revert=='Yes' else DB.rollback()
+DB.commit() if revert in ['Yes', 'True'] else DB.rollback()

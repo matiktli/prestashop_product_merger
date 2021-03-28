@@ -1,6 +1,6 @@
 import model as m
 
-TABLE_PREFIX = 'prstshp_'
+TABLE_PREFIX = 'pr_' #prstshp_, pr_
 """
 ------------------------- HELPER FUNCTIONS -------------------------
 """
@@ -8,7 +8,7 @@ def add_prefix(arr, prefix):
     return [prefix + x for x in arr]
 
 def turn_into_string(arr):
-    return ', '.join(arr)
+    return ', '.join([str(v) for v in arr])
 
 def add_this_special_char_to_column_names(arr):
     return [('`' + str(x) + '`') for x in arr]

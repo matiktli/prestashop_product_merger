@@ -35,7 +35,9 @@ def get_mother_products(c, additional_query = ''):
 def get_unique_products(c, additional_query = ''):
     return get_products(c, [m.ProcStatus.UNIQUE], additional_query = additional_query)
 
-def get_products_to_process(c, additional_query = '', limit=None, offset=None):
+def get_products_to_process(c, ids=None, limit=None, offset=None):
+    if ids is not None:
+        additional_query = f'AND p.id_product IN {list_to_sql(ids)}'
     return get_products(c, [m.ProcStatus.UNIQUE, m.ProcStatus.NOT_PROCESSED], additional_query = additional_query, limit=limit)
 
 def get_potential_siblings_for_product(c, product=m.Product, limit=None, offset=None):
@@ -100,7 +102,7 @@ def save_combinations(c, mother_product, source, siblings, db=None, mappings={})
     for i, p in enumerate(([source] + siblings)):
         product_attribute_id = insert_product_attribute(c, p, db=db, default_on_value=(1 if i == 0 else None), mom_id = mother_product.id_product)
         insert_product_attribute_shop(c, p, db=db, product_attribute_id=product_attribute_id, default_on_value=(1 if i == 0 else None), mom_id = mother_product.id_product)
-        insert_stock_available(c, db=db, mother_id=mother_product.id_product, product_attribute_id=product_attribute_id, product_id=p.id_product)
+        insert_stock_available(c, mother_id=mother_product.id_product, product_attribute_id=product_attribute_id, product_id=p.id_product)
         move_images_from_product_to_other(c, source_product_id=p.id_product, target_product_id=mother_product.id_product, cover='NULL', product_attribute_id=product_attribute_id)
         for j, ref in enumerate(p.references[1:]):
             found_mapping = None
@@ -117,6 +119,7 @@ def save_combinations(c, mother_product, source, siblings, db=None, mappings={})
                 seen_attr_to_group.add('{}-{}'.format(attribute_id, attribute_group_id))
                 insert_layered_product_attribute(c, product=mother_product, attribute_id=attribute_id, attribute_group_id=attribute_group_id)
     set_only_one_img_as_cover(c, mother_product.id_product)
+    insert_summed_stock(c, mother_id=mother_product.id_product, siblings = [source] + siblings)
 
 def insert_product(c, product, db=None):
     product_fields_without_id = m.PRODUCT_FIELDS.copy()
@@ -186,15 +189,26 @@ def insert_layered_product_attribute(c, product, attribute_id, attribute_group_i
     q = f'INSERT INTO `' + queries.TABLE_PREFIX + f'layered_product_attribute` (`id_attribute`, `id_product`, `id_attribute_group`, `id_shop`) VALUES (\'{attribute_id}\', \'{product.id_product}\', \'{attribute_group_id}\', 1)'
     c.execute(q)
 
-def insert_stock_available(c, db=None, product_id=None, product_attribute_id=None, mother_id=None):
-    q = f'SELECT quantity FROM `' + queries.TABLE_PREFIX + f'stock_available` WHERE id_product={product_id} AND id_product_attribute=0'
-    c.execute(q)
-    quantity = c.fetchall()
-    quantity = quantity[0][0] if len(quantity) == 1 else None
+def insert_stock_available(c, product_id=None, product_attribute_id=None, mother_id=None, quantity=None):
+    if quantity == None:
+        quantity = count_quantity_for_products(c, [product_id])
     q = f'INSERT INTO `' + queries.TABLE_PREFIX + f'stock_available` (`id_product`, `id_product_attribute`, `quantity`, `id_shop`, `id_shop_group`) VALUES (\'{mother_id}\', \'{product_attribute_id}\', \'{quantity}\', 1, 0)'
     c.execute(q)
-    if db != None:
-        db.commit()
+    
+def insert_summed_stock(c, siblings, mother_id):
+    summed_q = count_quantity_for_products(c, [s.id_product for s in siblings])
+    print('-> ', summed_q)
+    insert_stock_available(c, quantity=summed_q, product_attribute_id=0, mother_id=mother_id)
+
+def count_quantity_for_products(c, product_ids: []):
+    q = f'SELECT quantity FROM `' + queries.TABLE_PREFIX + f'stock_available` WHERE id_product in ({queries.turn_into_string(product_ids)}) AND id_product_attribute=0'
+    c.execute(q)
+    q_result = c.fetchall()
+    s = 0
+    if len(q_result) == 0: return None
+    for quant in q_result:
+        s += int(quant[0])
+    return s
 
 def insert_category_product(c, mother, db=None):
     q = f'SELECT COUNT(*) FROM `' + queries.TABLE_PREFIX + f'category_product` WHERE id_category={mother.id_category_default}'
