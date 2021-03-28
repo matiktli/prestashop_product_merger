@@ -148,8 +148,6 @@ Create mapping for refs into names if possible
 """
 def map_attribute_refs_to_names(grouped_attr_refs, grouped_attr_names):
     result = []
-    print('--> ', grouped_attr_refs)
-    print('--> ', grouped_attr_names)
     if len(grouped_attr_refs) != len(grouped_attr_names):
         raise Exception("Could not match refs to names. Wrong initial sizes")
     for i in range(0, len(grouped_attr_refs)):

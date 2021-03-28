@@ -100,6 +100,7 @@ def save_combinations(c, mother_product, source, siblings, db=None, mappings={})
         product_attribute_id = insert_product_attribute(c, p, db=db, default_on_value=(1 if i == 0 else None), mom_id = mother_product.id_product)
         insert_product_attribute_shop(c, p, db=db, product_attribute_id=product_attribute_id, default_on_value=(1 if i == 0 else None), mom_id = mother_product.id_product)
         insert_stock_available(c, db=db, mother_id=mother_product.id_product, product_attribute_id=product_attribute_id, product_id=p.id_product)
+        move_images_from_product_to_other(c, source_product_id=p.id_product, target_product_id=mother_product.id_product, cover='NULL', product_attribute_id=product_attribute_id)
         for i, ref in enumerate(p.references[1:]):
             found_mapping = None
             for k, v in mappings[i+1].items():
@@ -111,6 +112,7 @@ def save_combinations(c, mother_product, source, siblings, db=None, mappings={})
             if attribute_id == None:
                 raise Exception(f'Could not find attribute id for mapping: {found_mapping}')
             insert_product_attribute_combination(c, db=db, attribute_id=attribute_id, product_attribute_id=product_attribute_id)
+    set_only_one_img_as_cover(c, mother_product.id_product)
 
 def insert_product(c, product, db=None):
     product_fields_without_id = m.PRODUCT_FIELDS.copy()
@@ -193,3 +195,24 @@ def insert_category_product(c, mother, db=None):
     count = count[0][0] if len(count) == 1 else None
     q = f'INSERT INTO `' + queries.TABLE_PREFIX + f'category_product` (id_category, id_product, position) VALUES (\'{mother.id_category_default}\', \'{mother.id_product}\', \'{count + 1}\')'
     c.execute(q)
+
+def move_images_from_product_to_other(c, source_product_id, target_product_id, product_attribute_id, cover='NULL'):
+    sq = f'SELECT id_image FROM `{queries.TABLE_PREFIX}image` WHERE id_product={source_product_id}'
+    c.execute(sq)
+    sq_results = c.fetchall()
+    for i, img_id in enumerate(sq_results):
+        uq_image = f'UPDATE `{queries.TABLE_PREFIX}image` SET id_product={target_product_id}, cover={cover}, position={i} WHERE id_product={source_product_id} AND id_image={img_id[0]}'
+        c.execute(uq_image)
+        uq_image_shop = f'UPDATE `{queries.TABLE_PREFIX}image_shop` SET id_product={target_product_id}, cover={cover} WHERE id_product={source_product_id} AND id_image={img_id[0]}'
+        c.execute(uq_image_shop)
+        iq_image_attr = f'INSERT INTO `{queries.TABLE_PREFIX}product_attribute_image` (id_product_attribute, id_image) VALUES ({product_attribute_id},{img_id[0]})'
+        c.execute(iq_image_attr)
+
+def set_only_one_img_as_cover(c, product_id):
+    sq = f'SELECT id_image FROM `{queries.TABLE_PREFIX}image` WHERE id_product={product_id} LIMIT 1'
+    c.execute(sq)
+    id_image = c.fetchall()[0][0]
+    uq_image = f'UPDATE `{queries.TABLE_PREFIX}image` SET cover=1 WHERE id_product={product_id} AND id_image={id_image}'
+    c.execute(uq_image)
+    uq_image_shop = f'UPDATE `{queries.TABLE_PREFIX}image_shop` SET cover=1 WHERE id_product={product_id} AND id_image={id_image}'
+    c.execute(uq_image_shop)

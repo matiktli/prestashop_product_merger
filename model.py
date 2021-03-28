@@ -21,7 +21,12 @@ PRODUCT_ATTRIBUTE_FIELDS = ['id_product', 'reference', 'supplier_reference', 'lo
 
 PRODUCT_ATTRIBUTE_SHOP_FIELDS = ['id_product', 'id_product_attribute', 'id_shop', 'wholesale_price', 'price', 'ecotax', 'weight', 'unit_price_impact', 'default_on', 'minimal_quantity', 'low_stock_threshold', 'low_stock_alert', 'available_date']
 
-STOCK_AVAILABLE = ['id_stock_available', 'id_product', 'id_product_attribute', 'id_shop', 'id_shop_group', 'quantity', 'physical_quantity', 'reserved_quantity', 'depends_on_stock', 'out_of_stock', 'location']
+STOCK_AVAILABLE_FIELDS = ['id_stock_available', 'id_product', 'id_product_attribute', 'id_shop', 'id_shop_group', 'quantity', 'physical_quantity', 'reserved_quantity', 'depends_on_stock', 'out_of_stock', 'location']
+
+IMAGE_FIELDS = ['id_product', 'id_image', 'position', 'cover']
+IMAGE_LANG_FIELDS = ['id_image', 'id_lang', 'legend']
+IMAGE_SHOP_FIELDS = ['id_product', 'id_image', 'id_shop']
+IMAGE_PRODUCT_ATTRIBUTE_FIELDS = ['id_image', 'id_product_attribute']
 
 PRODUCT_CUSTOM_DEFINED_FIELDS = ['references']
 
