@@ -48,7 +48,7 @@ PRODUCT = recordtype('PRODUCT',
 class Product(PRODUCT):
         __slots__ = ()
         def __str__(self):
-            return str(f'Product(id: {self.id_product}, name: {self.name}, references: {self.references}, proc_status: {self.proc_status})')
+            return str(f'\nProduct(id: {self.id_product}, name: {self.name}, references: {self.references}, proc_status: {self.proc_status})')
         
         def __repr__(self):
             return self.__str__()

@@ -89,9 +89,10 @@ def group_refs_by_order(products):
 """
 Group the names of provided siblings by their order. (sort of like the json structure)
 """
-def group_names_by_order(products):
+def group_names_by_order(products, override_common_name=None):
     grouped_names = []
-    head_name = find_most_common_name_part(products)
+    head_name = override_common_name if override_common_name is not None else find_most_common_name_part(products)
+    print(f'Ima here: {head_name}, {override_common_name}')
     if not head_name:
         head_name = str(products[0].id_product)
         raise Exception("Could not find head_name")
@@ -115,12 +116,14 @@ def to_ref_string(refs: []):
 Find most repeating name in siblings products
 """
 def find_most_common_name_part(products, n=2):
+    product_names = [p.name.split(' ') for p in products]
+    return most_repeating_prefix(product_names)
     result = None
     for p in products:
         if result == None:
             result = p.name
         else:
-            result = longest_substring(result, p.name)
+            result = longest_substring(result.split(' '), p.name.split(' '))
     # lets remove any 'non-word' from the end of string just in case
     splited = result.split(' ')
     last_suffix = splited[len(splited) - 1]
@@ -128,6 +131,18 @@ def find_most_common_name_part(products, n=2):
         result = ' '.join(splited[:-1])
     return result
 
+
+class MappingException(Exception):
+    def __init__(self, message):
+        self.message=message
+        super().__init__(self.message) 
+
+def can_map_attribute_refs_to_names(grouped_attr_refs, grouped_attr_names):
+    try:
+        map_attribute_refs_to_names(grouped_attr_refs, grouped_attr_names)
+        return True
+    except MappingException:
+        return False
 
 """
 Create mapping for refs into names if possible
@@ -137,12 +152,12 @@ def map_attribute_refs_to_names(grouped_attr_refs, grouped_attr_names):
     print('--> ', grouped_attr_refs)
     print('--> ', grouped_attr_names)
     if len(grouped_attr_refs) != len(grouped_attr_names):
-        raise Exception("Could not match refs to names. Wrong initial sizes")
+        raise MappingException("Could not match refs to names. Wrong initial sizes")
     for i in range(0, len(grouped_attr_refs)):
         inside_grouped_attr_refs = grouped_attr_refs[i]
         inside_grouped_attr_names = grouped_attr_names[i]
         if len(inside_grouped_attr_refs) != len(inside_grouped_attr_names):
-            raise Exception("Could not match refs to names. Wrong inside sizes")
+            raise MappingException("Could not match refs to names. Wrong inside sizes")
         inside_mapping = {}
         for j in range(0, len(inside_grouped_attr_refs)):
             inside_mapping[inside_grouped_attr_names[j]] = inside_grouped_attr_refs[j]
@@ -156,14 +171,24 @@ def prepare_mother_object(source_product, name, ref, attribute_mapping, siblings
     mother = t.product_to_mother(name, ref, source=source_product)
     return mother
 
+def get_first_part_of_name_that_is_not_prefix(name, prefix):
+    prefix = prefix.strip()
+    r = name.replace(prefix, '').strip().split(' ')[0]
+    r = r.strip().replace('\n', '')
+    return r
 """
 ------------------------- SUPER DUMY UTILS -------------------------
 """
+
+def strip(string1):
+    return string1.replace(' ','')
 
 """
 Utlility function for finding longest repeating substring in two strings
 """
 def longest_substring(s1, s2):
+    print(s1)
+    print(s2)
     answer = ""
     len1, len2 = len(s1), len(s2)
     for i in range(len1):
@@ -176,6 +201,34 @@ def longest_substring(s1, s2):
                     answer = match
                 match = ""
     return answer
+
+def min_arr(l):
+    m = l[0]
+    for e in l:
+        if len(e) <= len(m):
+            m = e
+    return m
+
+def max_arr(l):
+    m = l[0]
+    for e in l:
+        if len(e) >= len(m):
+            m = e
+    return m
+
+def most_repeating_prefix(l):
+    if not l: return ''
+    s1 = min_arr(l) if isinstance(l, list) else min(l)
+    s2 = max_arr(l) if isinstance(l, list) else max(l)
+    result = s1
+    for i, c in enumerate(s1):
+        if c != s2[i]:
+            result = s1[:i]
+            break
+    if isinstance(result, list):
+        return ' '.join(result)
+    else:
+        return result.strip()
 
 """
 Very trivial function implementation to do not produce boiler-plate code

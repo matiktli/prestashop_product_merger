@@ -51,7 +51,7 @@ for r in records_to_process:
         log(r.id_product, f'Processing: {r}', depth=0)
         mother = su.find_mother_for_product(CURSOR, r)
         if mother is None:
-            siblings = siblings_matcher.find_siblings(r)
+            siblings, override_common_name = siblings_matcher.find_siblings(r)
             log(r.id_product, f'Mother NOT found. Will try to find siblings', depth=1)
             if len(siblings) == 0:
                 su.set_products_proc_status(CURSOR, [r.id_product], m.ProcStatus.UNIQUE)
@@ -59,8 +59,9 @@ for r in records_to_process:
                 pass
             else:
                 log(r.id_product, f'Siblings found: {len(siblings)}. {[p.id_product for p in siblings]}', depth=2)
-                grouped_attribute_refs = u.group_refs_by_order(siblings+ [r])
-                grouped_attribute_names = u.group_names_by_order(siblings + [r])
+                print(siblings)
+                grouped_attribute_refs = u.group_refs_by_order(siblings + [r])
+                grouped_attribute_names = u.group_names_by_order(siblings + [r], override_common_name=override_common_name)
 
                 head_ref = u.get_head_ref_from_grouped_refs(grouped_attribute_refs)
                 head_name = u.get_head_name_from_grouped_names(grouped_attribute_names)
