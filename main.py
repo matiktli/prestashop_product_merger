@@ -13,7 +13,7 @@ DB = mysql.connector.connect(
   password="batmankill2404",
   database="prestashop"
 )
-DB.autocommit = False
+DB.autocommit = True
 CURSOR = DB.cursor()
 su.db_init(CURSOR, db=DB)
 
@@ -41,10 +41,10 @@ LIMIT=100
 
 siblings_matcher = matcher.SiblingsMatcher(CURSOR, None)
 
-records_to_process = su.get_products_to_process(CURSOR, limit=None, ids=[74])
+records_to_process = su.get_products_to_process(CURSOR, limit=None, ids=None)
 seen = set() # tmp, idk why doubles the records
 for r in records_to_process:
-    if len(seen) == LIMIT: break
+    #if len(seen) == LIMIT: break
     try:
         if r.id_product in seen: continue
         seen.add(r.id_product)
@@ -60,14 +60,14 @@ for r in records_to_process:
             else:
                 log(r.id_product, f'Siblings found: {len(siblings)}. {[p.id_product for p in siblings]}', depth=2)
                 print(siblings)
-                grouped_attribute_refs = u.group_refs_by_order(siblings + [r])
-                grouped_attribute_names = u.group_names_by_order(siblings + [r], override_common_name=override_common_name)
+
+                grouped_attribute_refs = u.group_refs_by_order(siblings+[r])
+                grouped_attribute_names = u.group_names_by_order(siblings+[r], override_common_name=override_common_name)
+                
+                mapped_refs_and_names, grouped_attribute_refs, grouped_attribute_names = u.map_attribute_refs_to_names(grouped_attribute_refs, grouped_attribute_names)
 
                 head_ref = u.get_head_ref_from_grouped_refs(grouped_attribute_refs)
                 head_name = u.get_head_name_from_grouped_names(grouped_attribute_names)
-
-                mapped_refs_and_names = u.map_attribute_refs_to_names(grouped_attribute_refs, grouped_attribute_names)
-
                 mother_product = u.prepare_mother_object(r, head_name, head_ref, mapped_refs_and_names, siblings=siblings)
                 mother_id = su.save_mother(CURSOR, mother_product)
                 mother_product.id_product = mother_id
@@ -86,8 +86,8 @@ for r in records_to_process:
             su.mark_products_as_inactive(CURSOR, [r.id_product])
             su.set_products_proc_status(CURSOR, [r.id_product], m.ProcStatus.PROCESSED)
     except Exception as ex:
-        DB.rollback()
-        raise ex #tmp
+        #DB.rollback()
+        #raise ex #tmp
         log(r.id_product, f'\n[Error while processing record with id: {r.id_product}]. {ex}', depth=0)
 
 STOP = datetime.now()

@@ -21,7 +21,7 @@ def get_products(c, proc_statuses: [m.ProcStatus] = None, additional_query = '',
         q += f' AND p.proc_status in ({statuses_string})'
     else:
         q += f' AND p.proc_status is null'
-
+    q += ' AND p.state=1'
     q += ' ' + additional_query
     q += ' ORDER BY p.date_add desc'
     if limit is not None:
@@ -36,16 +36,17 @@ def get_unique_products(c, additional_query = ''):
     return get_products(c, [m.ProcStatus.UNIQUE], additional_query = additional_query)
 
 def get_products_to_process(c, ids=None, limit=None, offset=None):
+    additional_query=''
     if ids is not None:
         additional_query = f'AND p.id_product IN {list_to_sql(ids)}'
     return get_products(c, [m.ProcStatus.UNIQUE, m.ProcStatus.NOT_PROCESSED], additional_query = additional_query, limit=limit)
 
 def mark_products_as_inactive(c, product_ids: []):
-    q = 'UPDATE `' + queries.TABLE_PREFIX + 'product` SET `active`=0, `state`=0 WHERE `id_product` IN ' + list_to_sql(product_ids)
+    q = 'UPDATE ' + queries.TABLE_PREFIX + 'product SET state=0 WHERE id_product IN ' + list_to_sql(product_ids)
     c.execute(q)
 
 def set_products_proc_status(c, product_ids: [], status: m.ProcStatus):
-    q = f'UPDATE `' + queries.TABLE_PREFIX + f'product` SET `proc_status`={status.value} WHERE `id_product` IN ' + list_to_sql(product_ids)
+    q = f'UPDATE ' + queries.TABLE_PREFIX + f'product SET proc_status={status.value} WHERE id_product IN ' + list_to_sql(product_ids)
     c.execute(q)
 
 def find_mother_for_product(c, product):
@@ -64,11 +65,12 @@ def find_mother_for_product(c, product):
 def find_attribute_id_by_name(c, name):
     names = [name.lower(), name.upper(), name.capitalize()]
     names = ','.join(['\'' + n + '\'' for n in names])
-    q = f'SELECT a_lang.id_attribute, a.id_attribute_group FROM `' + queries.TABLE_PREFIX + f'attribute_lang` a_lang INNER JOIN `{queries.TABLE_PREFIX}attribute` a ON a.id_attribute = a_lang.id_attribute WHERE a_lang.name IN ({names})'
+    q = f'SELECT a_lang.id_attribute, a.id_attribute_group FROM `' + queries.TABLE_PREFIX + f'attribute_lang` a_lang INNER JOIN `{queries.TABLE_PREFIX}attribute` a ON a.id_attribute = a_lang.id_attribute WHERE a_lang.name IN ({names}) AND a_lang.id_lang=1'
     c.execute(q)
     r = c.fetchall()
-    r = r[0] if len(r) == 1 else (None, None)
-    return r
+    if len(r) == 0:
+        return (None, None)
+    return r[0]
 
 def merge_product_to_mother(c, product, mother):
     #TODO-hard-p2- move data from product to combinations
@@ -158,7 +160,7 @@ def insert_product_attribute_shop(c, product_attribute_shop, db=None, default_on
     product_shop_fields_with_id = m.PRODUCT_ATTRIBUTE_SHOP_FIELDS.copy()
     product_shop_sql_fields_without_id = str(queries.PRODUCT_ATTRIBUTE_SHOP_FIELDS_SQL_INSERT).replace('p_atr_shop.', '')
     
-    values = t.to_db_values(product_attribute_shop, product_shop_fields_with_id, defaults={'unit_price_impact': 0, 'default_on': default_on_value, 'id_product_attribute': product_attribute_id, 'id_product': mom_id})
+    values = t.to_db_values(product_attribute_shop, product_shop_fields_with_id, defaults={'unit_price_impact': 0, 'default_on': default_on_value, 'id_product_attribute': product_attribute_id, 'id_product': mom_id, 'price': 0})
     q = queries.INSERT_PRODUCT_ATTRIBUTE_SHOP_QUERY.format(product_shop_sql_fields_without_id, values)
     c.execute(q)
     if db != None:
@@ -220,7 +222,9 @@ def move_images_from_product_to_other(c, source_product_id, target_product_id, p
 def set_only_one_img_as_cover(c, product_id):
     sq = f'SELECT id_image FROM `{queries.TABLE_PREFIX}image` WHERE id_product={product_id} LIMIT 1'
     c.execute(sq)
-    id_image = c.fetchall()[0][0]
+    r = c.fetchall()
+    if len(r) == 0: return
+    id_image = r[0][0]
     uq_image = f'UPDATE `{queries.TABLE_PREFIX}image` SET cover=1 WHERE id_product={product_id} AND id_image={id_image}'
     c.execute(uq_image)
     uq_image_shop = f'UPDATE `{queries.TABLE_PREFIX}image_shop` SET cover=1 WHERE id_product={product_id} AND id_image={id_image}'

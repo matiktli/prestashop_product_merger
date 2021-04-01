@@ -15,7 +15,7 @@ class SiblingsMatcher():
         found_siblings = self.__filter_siblings_by_reference(product, potential_siblings)
         print(f'Potentials after ref filter: {len(found_siblings)}')
         override_common_name = None
-        found_siblings, override_common_name = self.__filter_siblings_by_name(product, found_siblings)
+        #found_siblings, override_common_name = self.__filter_siblings_by_name(product, found_siblings)
         print(f'Potentials after name filter: {len(found_siblings)}')
         return found_siblings, override_common_name
 
@@ -43,19 +43,17 @@ class SiblingsMatcher():
         return siblings
 
     def __filter_siblings_by_name(self, product, potential_siblings, search_for_name_part=None):
-        print('----')
         available_names = [p.name.split(' ') for p in potential_siblings if p.name != product.name]
-        
+        if search_for_name_part == product.name:
+            raise Exception("Name filter to many recursions")
         if search_for_name_part is None:
             most_common_prefix = u.most_repeating_prefix(available_names).strip()
-            print('kuhwa: ', most_common_prefix)
             first_non_prefix_part = u.get_first_part_of_name_that_is_not_prefix(product.name, most_common_prefix).strip()
             search_for_name_part = most_common_prefix + ' ' + first_non_prefix_part
         potential_siblings = [s for s in potential_siblings if search_for_name_part in s.name]
         print(f'--Searching for part: \'{str(search_for_name_part)}\' found: {len(potential_siblings)}.')
         grouped_attribute_refs = u.group_refs_by_order(potential_siblings)
         grouped_attribute_names = u.group_names_by_order(potential_siblings, override_common_name=search_for_name_part)
-        print('kuhwa2: ', search_for_name_part)
         if u.can_map_attribute_refs_to_names(grouped_attribute_refs, grouped_attribute_names):
             return potential_siblings, search_for_name_part
         else:

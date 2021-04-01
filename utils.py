@@ -2,6 +2,7 @@ import model as m
 import copy
 import transformer as t
 import os
+from itertools import takewhile
 
 """
 Obtain the mother product name from grouped list of products
@@ -92,7 +93,6 @@ Group the names of provided siblings by their order. (sort of like the json stru
 def group_names_by_order(products, override_common_name=None):
     grouped_names = []
     head_name = override_common_name if override_common_name is not None else find_most_common_name_part(products)
-    print(f'Ima here: {head_name}, {override_common_name}')
     if not head_name:
         head_name = str(products[0].id_product)
         raise Exception("Could not find head_name")
@@ -116,8 +116,9 @@ def to_ref_string(refs: []):
 Find most repeating name in siblings products
 """
 def find_most_common_name_part(products, n=2):
+    print('......')
     product_names = [p.name.split(' ') for p in products]
-    return most_repeating_prefix(product_names)
+    return most_repeating_prefix_in_list(product_names)
     result = None
     for p in products:
         if result == None:
@@ -144,15 +145,31 @@ def can_map_attribute_refs_to_names(grouped_attr_refs, grouped_attr_names):
     except MappingException:
         return False
 
+
+def super_duper_smart_function(grouped_attr_refs, grouped_attr_names):
+    if len(grouped_attr_refs) == len(grouped_attr_names):
+        return grouped_attr_refs, grouped_attr_names
+    else:
+        if len(grouped_attr_refs) > len(grouped_attr_names):
+            last_head_name_sub_part = grouped_attr_names[0][0].split(' ')[-1].strip()
+            grouped_attr_names[0] = [grouped_attr_names[0][0].replace(' ' + last_head_name_sub_part, '')]
+            grouped_attr_names.insert(1, [last_head_name_sub_part])
+            print(grouped_attr_names)
+            return grouped_attr_refs, grouped_attr_names
+        else:
+            return grouped_attr_refs, grouped_attr_names
+
 """
 Create mapping for refs into names if possible
 """
 def map_attribute_refs_to_names(grouped_attr_refs, grouped_attr_names):
     result = []
-    print('--> ', grouped_attr_refs)
-    print('--> ', grouped_attr_names)
+    print('Refs--> ', grouped_attr_refs)
+    print('Names--> ', grouped_attr_names)
     if len(grouped_attr_refs) != len(grouped_attr_names):
-        raise MappingException("Could not match refs to names. Wrong initial sizes")
+        grouped_attr_refs, grouped_attr_names = super_duper_smart_function(grouped_attr_refs, grouped_attr_names)
+        if len(grouped_attr_refs) != len(grouped_attr_names):
+            raise MappingException("Could not match refs to names. Wrong initial sizes")
     for i in range(0, len(grouped_attr_refs)):
         inside_grouped_attr_refs = grouped_attr_refs[i]
         inside_grouped_attr_names = grouped_attr_names[i]
@@ -162,7 +179,8 @@ def map_attribute_refs_to_names(grouped_attr_refs, grouped_attr_names):
         for j in range(0, len(inside_grouped_attr_refs)):
             inside_mapping[inside_grouped_attr_names[j]] = inside_grouped_attr_refs[j]
         result.append(inside_mapping)
-    return result
+    print('Mappings--> ', result)
+    return result, grouped_attr_refs, grouped_attr_names
 
 """
 Build mother product from source product
@@ -229,6 +247,9 @@ def most_repeating_prefix(l):
         return ' '.join(result)
     else:
         return result.strip()
+
+def most_repeating_prefix_in_list(l):
+    return ' '.join(os.path.commonprefix(l))
 
 """
 Very trivial function implementation to do not produce boiler-plate code

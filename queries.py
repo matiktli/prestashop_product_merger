@@ -1,6 +1,6 @@
 import model as m
 
-TABLE_PREFIX = 'prstshp_' #prstshp_, pr_
+TABLE_PREFIX = 'pr_' #prstshp_, pr_
 """
 ------------------------- HELPER FUNCTIONS -------------------------
 """
